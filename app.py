@@ -323,7 +323,7 @@ def processing_tab():
         results_df.style.format({
             'CAP (cm)': '{:.2f}',
             'HT (m)': '{:.2f}',
-            'DAP (m)': '{:.4f}',
+            'DAP (cm)': '{:.4f}',
             'VT (m³)': '{:.4f}',
             'VT (m³/ha)': '{:.4f}',
             'VT (st/ha)': '{:.4f}'
@@ -348,7 +348,7 @@ def processing_tab():
         st.metric("Volume Total (st/ha)", f"{results_df['VT (st/ha)'].sum():.4f}")
     
     with col4:
-        st.metric("DAP Médio (m)", f"{results_df['DAP (m)'].mean():.4f}")
+        st.metric("DAP Médio (cm)", f"{results_df['DAP (cm)'].mean():.4f}")
         st.metric("Altura Média (m)", f"{results_df['HT (m)'].mean():.2f}")
 
 def statistics_tab():

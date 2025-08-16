@@ -6,6 +6,69 @@ from utils.calculations import ForestryCalculator
 from utils.statistics import StatisticsAnalyzer
 from utils.report_generator import ReportGenerator
 
+def detect_and_map_columns(df):
+    """Detecta e mapeia automaticamente as colunas da planilha"""
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    
+    mapping_results = []
+    new_columns = []
+    
+    for col in df.columns:
+        original_col = str(col).strip()
+        col_upper = original_col.upper()
+        
+        # Detectar coluna de numeração das árvores
+        if any(pattern in col_upper for pattern in ['N°', 'N', 'NO', 'NUM', 'NUMERO', 'NÚMERO']):
+            new_columns.append('Nº da árvore')
+            mapping_results.append(f"✓ '{original_col}' → 'Nº da árvore'")
+        
+        # Detectar nome comum
+        elif 'NOME' in col_upper and 'COMUM' in col_upper:
+            new_columns.append('Nome comum')
+            mapping_results.append(f"✓ '{original_col}' → 'Nome comum'")
+        
+        # Detectar nome científico
+        elif 'NOME' in col_upper and ('CIENTÍFICO' in col_upper or 'CIENTIFICO' in col_upper):
+            new_columns.append('Nome científico')
+            mapping_results.append(f"✓ '{original_col}' → 'Nome científico'")
+        
+        # Detectar CAP
+        elif 'CAP' in col_upper:
+            new_columns.append('CAP (cm)')
+            mapping_results.append(f"✓ '{original_col}' → 'CAP (cm)'")
+        
+        # Detectar altura (HT)
+        elif 'HT' in col_upper or 'ALTURA' in col_upper:
+            new_columns.append('HT (m)')
+            mapping_results.append(f"✓ '{original_col}' → 'HT (m)'")
+        
+        # Manter coluna original se não mapear
+        else:
+            new_columns.append(original_col)
+            mapping_results.append(f"• '{original_col}' → mantido")
+    
+    # Aplicar novos nomes das colunas
+    df.columns = new_columns
+    
+    # Criar coluna combinada de nomes se necessário
+    if 'Nome comum' in df.columns and 'Nome científico' in df.columns:
+        df['Nome comum/científico'] = df['Nome comum'].astype(str) + ' / ' + df['Nome científico'].astype(str)
+        mapping_results.append("✓ Combinadas colunas de nomes")
+    elif 'Nome comum' in df.columns:
+        df['Nome comum/científico'] = df['Nome comum']
+        mapping_results.append("✓ Usando nome comum como identificação")
+    elif 'Nome científico' in df.columns:
+        df['Nome comum/científico'] = df['Nome científico']
+        mapping_results.append("✓ Usando nome científico como identificação")
+    
+    # Mostrar resultados do mapeamento
+    st.success("Mapeamento de colunas realizado:")
+    for result in mapping_results:
+        st.write(result)
+    
+    return df
+
 def main():
     st.set_page_config(
         page_title="Sistema de Inventário Florestal",
@@ -80,90 +143,18 @@ def upload_data_tab():
                 st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
                 st.dataframe(df.head())
                 
-                # Clean column names by stripping whitespace
-                df.columns = df.columns.str.strip()
+                # Detectar automaticamente as colunas
+                df_processed = detect_and_map_columns(df)
                 
-                # Debug information - show exact column details
-                st.write("**Debug - Análise das Colunas:**")
-                for i, col in enumerate(df.columns):
-                    st.write(f"Coluna {i+1}: '{col}' (tipo: {type(col).__name__}, comprimento: {len(str(col))})")
+                # Salvar dados automaticamente
+                st.session_state.input_data = df_processed
+                st.session_state.file_uploaded = True
+                st.success("✅ Planilha carregada e dados salvos automaticamente!")
+                st.info(f"📊 {len(df_processed)} árvores detectadas e prontas para processamento")
                 
-                # Create a more flexible mapping
-                new_columns = []
-                column_mapping_done = []
-                
-                for col in df.columns:
-                    original_col = str(col).strip()
-                    col_upper = original_col.upper()
-                    
-                    # Tree number column - more flexible matching
-                    if (col_upper == 'N°' or col_upper == 'N' or 'N°' in col_upper or 
-                        col_upper in ['NO', 'NUM', 'NUMERO', 'NÚMERO']):
-                        new_columns.append('Nº da árvore')
-                        column_mapping_done.append(f"✓ '{original_col}' → 'Nº da árvore'")
-                    
-                    # Common name
-                    elif 'NOME' in col_upper and 'COMUM' in col_upper:
-                        new_columns.append('Nome comum')
-                        column_mapping_done.append(f"✓ '{original_col}' → 'Nome comum'")
-                    
-                    # Scientific name
-                    elif 'NOME' in col_upper and ('CIENTÍFICO' in col_upper or 'CIENTIFICO' in col_upper):
-                        new_columns.append('Nome científico')
-                        column_mapping_done.append(f"✓ '{original_col}' → 'Nome científico'")
-                    
-                    # CAP column
-                    elif 'CAP' in col_upper:
-                        new_columns.append('CAP (cm)')
-                        column_mapping_done.append(f"✓ '{original_col}' → 'CAP (cm)'")
-                    
-                    # Height column - flexible matching
-                    elif 'HT' in col_upper or 'ALTURA' in col_upper:
-                        new_columns.append('HT (m)')
-                        column_mapping_done.append(f"✓ '{original_col}' → 'HT (m)'")
-                    
-                    # Keep original name if no mapping found
-                    else:
-                        new_columns.append(original_col)
-                        column_mapping_done.append(f"• '{original_col}' → mantido como está")
-                
-                # Apply new column names
-                df.columns = new_columns
-                
-                # Show mapping results
-                st.write("**Resultado do Mapeamento:**")
-                for mapping in column_mapping_done:
-                    st.write(mapping)
-                
-                # Create combined species name column
-                if 'Nome comum' in df.columns and 'Nome científico' in df.columns:
-                    df['Nome comum/científico'] = df['Nome comum'].astype(str) + ' / ' + df['Nome científico'].astype(str)
-                    st.success("✓ Combinadas colunas de nomes")
-                elif 'Nome comum' in df.columns:
-                    df['Nome comum/científico'] = df['Nome comum']
-                    st.success("✓ Usando nome comum")
-                elif 'Nome científico' in df.columns:
-                    df['Nome comum/científico'] = df['Nome científico']
-                    st.success("✓ Usando nome científico")
-                
-                # Show final column structure
-                st.info(f"Colunas após mapeamento: {list(df.columns)}")
-                
-                # Validate required columns after mapping
-                required_columns = ['Nº da árvore', 'Nome comum/científico', 'CAP (cm)', 'HT (m)']
-                missing_columns = [col for col in required_columns if col not in df.columns]
-                
-                if missing_columns:
-                    st.error(f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}")
-                    st.info("Certifique-se de que sua planilha contém as colunas: UA, N°, NOME COMUM, NOME CIENTÍFICO, CAP (cm), HT(m)")
-                    st.info("Colunas encontradas na sua planilha: " + ", ".join(df.columns.tolist()))
-                else:
-                    st.session_state.input_data = df
-                    st.session_state.file_uploaded = True
-                    st.success("✅ Dados da planilha salvos e prontos para processamento!")
-                    
-                    # Show data summary
-                    st.info(f"📊 Resumo: {len(df)} árvores carregadas com {len(df.columns)} colunas")
+                # Mostrar preview dos dados processados
+                st.subheader("Preview dos Dados Processados")
+                st.dataframe(df_processed.head(), use_container_width=True)
                     
             except Exception as e:
                 st.error(f"Erro ao carregar o arquivo: {str(e)}")

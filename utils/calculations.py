@@ -16,23 +16,23 @@ class ForestryCalculator:
             cap (float): Circumference at breast height in cm
             
         Returns:
-            float: Diameter at breast height in meters (converted from cm)
+            float: Diameter at breast height in cm (mantém em cm para usar na fórmula VT)
         """
-        return (cap / np.pi) / 100  # Convert cm to meters
+        return cap / np.pi  # DAP em cm
     
-    def calculate_tree_volume(self, dap_m, ht):
+    def calculate_tree_volume(self, dap_cm, ht):
         """
-        Calculate tree volume using the specified formula.
-        Formula: VT = 0.000094 × (DAP^1.830398) × (HT^0.960913)
+        Calculate tree volume using the exact formula provided by user.
+        Formula: VT = 0,000094 × DAP^1,830398 × HT^0,960913
         
         Args:
-            dap_m (float): Diameter at breast height in meters
+            dap_cm (float): Diameter at breast height in cm (conforme fórmula)
             ht (float): Total height in meters
             
         Returns:
             float: Tree volume in cubic meters
         """
-        return 0.000094 * (dap_m ** 1.830398) * (ht ** 0.960913)
+        return 0.000094 * (dap_cm ** 1.830398) * (ht ** 0.960913)
     
     def calculate_volume_per_hectare(self, tree_volume, form_factor, plot_area_ha):
         """
@@ -146,12 +146,12 @@ class ForestryCalculator:
         if before_numeric_filter > after_numeric_filter:
             st.write(f"**Após remover dados não numéricos: {after_numeric_filter} árvores (-{before_numeric_filter-after_numeric_filter})**")
         
-        # Calculate DAP in meters
-        results_df['DAP (m)'] = results_df['CAP (cm)'].apply(self.calculate_dap)
+        # Calculate DAP in centimeters (conforme fórmula)
+        results_df['DAP (cm)'] = results_df['CAP (cm)'].apply(self.calculate_dap)
         
-        # Calculate tree volume
+        # Calculate tree volume using DAP in cm and HT in meters
         results_df['VT (m³)'] = results_df.apply(
-            lambda row: self.calculate_tree_volume(row['DAP (m)'], row['HT (m)']),
+            lambda row: self.calculate_tree_volume(row['DAP (cm)'], row['HT (m)']),
             axis=1
         )
         
@@ -164,7 +164,7 @@ class ForestryCalculator:
         results_df['VT (st/ha)'] = results_df['VT (m³/ha)'].apply(self.calculate_stereo_volume)
         
         # Round all calculated values to 4 decimal places for precision
-        calculation_columns = ['DAP (m)', 'VT (m³)', 'VT (m³/ha)', 'VT (st/ha)']
+        calculation_columns = ['DAP (cm)', 'VT (m³)', 'VT (m³/ha)', 'VT (st/ha)']
         for col in calculation_columns:
             results_df[col] = results_df[col].round(4)
         

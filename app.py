@@ -55,8 +55,8 @@ def calculate_species_volume_summary(results_df, project_info):
     # Calcular n total (extrapolação para área total)
     species_groups['n total'] = species_groups['n/ha'] * total_area_ha
     
-    # Calcular V/ha(m³)/Área total/ha (volume extrapolado para área total)
-    species_groups['V/ha(m³)/Área total/ha'] = species_groups['VT (m³)/ha'] * (total_area_ha / plot_area_ha)
+    # Calcular V/ha(m³)/Área total/ha usando a fórmula especificada: VT(m³/ha) × Área Total a ser Suprimida (ha)
+    species_groups['V/ha(m³)/Área total/ha'] = species_groups['VT (m³)/ha'] * total_area_ha
     
     # Reordenar colunas conforme solicitado
     final_columns = [

@@ -174,6 +174,29 @@ def upload_data_tab():
                 # Mostrar informações detalhadas sobre os dados originais
                 st.info(f"📊 Dados originais: {len(df)} linhas, {len(df.columns)} colunas")
                 
+                # Verificar especificamente a coluna N° para contar árvores
+                tree_count_analysis = []
+                for col in df.columns:
+                    if 'N°' in str(col).upper() or 'N' == str(col).upper():
+                        unique_trees = df[col].nunique()
+                        valid_entries = df[col].notna().sum()
+                        tree_count_analysis.append(f"Coluna '{col}': {valid_entries} entradas válidas, {unique_trees} árvores únicas")
+                        
+                        # Verificar se há números duplicados
+                        duplicates = df[col].duplicated().sum()
+                        if duplicates > 0:
+                            tree_count_analysis.append(f"  ⚠️ {duplicates} números duplicados encontrados")
+                        
+                        # Verificar valores vazios
+                        empty_values = df[col].isna().sum()
+                        if empty_values > 0:
+                            tree_count_analysis.append(f"  ⚠️ {empty_values} valores vazios encontrados")
+                
+                if tree_count_analysis:
+                    st.write("**Análise da contagem de árvores:**")
+                    for analysis in tree_count_analysis:
+                        st.write(analysis)
+                
                 # Detectar automaticamente as colunas
                 df_processed = detect_and_map_columns(df)
                 

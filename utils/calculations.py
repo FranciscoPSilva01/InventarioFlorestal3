@@ -97,6 +97,16 @@ class ForestryCalculator:
         
         # Remove rows with missing values in critical columns
         before_dropna = len(results_df)
+        
+        # Identificar linhas com dados vazios antes de remover
+        empty_rows = results_df[results_df[required_columns].isna().any(axis=1)]
+        if len(empty_rows) > 0:
+            st.write("**Linhas com dados vazios que serão removidas:**")
+            if 'Nº da árvore' in empty_rows.columns:
+                tree_numbers = empty_rows['Nº da árvore'].tolist()
+                st.write(f"Árvores: {tree_numbers}")
+            st.dataframe(empty_rows[required_columns + (['Nº da árvore'] if 'Nº da árvore' in empty_rows.columns else [])].head(10))
+        
         results_df = results_df.dropna(subset=required_columns)
         after_dropna = len(results_df)
         if before_dropna > after_dropna:
@@ -118,6 +128,15 @@ class ForestryCalculator:
             if len(invalid_rows) > 0:
                 st.write("Exemplos de dados inválidos:")
                 st.dataframe(invalid_rows[['CAP (cm)', 'HT (m)']].head())
+        
+        # Identificar linhas com dados não numéricos antes de remover
+        invalid_rows = results_df[results_df['CAP (cm)'].isna() | results_df['HT (m)'].isna()]
+        if len(invalid_rows) > 0:
+            st.write("**Linhas com dados não numéricos que serão removidas:**")
+            if 'Nº da árvore' in invalid_rows.columns:
+                tree_numbers = invalid_rows['Nº da árvore'].tolist()
+                st.write(f"Árvores com dados inválidos: {tree_numbers}")
+            st.dataframe(invalid_rows[['CAP (cm)', 'HT (m)'] + (['Nº da árvore'] if 'Nº da árvore' in invalid_rows.columns else [])].head(10))
         
         # Remove rows with invalid numeric values
         before_numeric_filter = len(results_df)

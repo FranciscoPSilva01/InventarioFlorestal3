@@ -74,8 +74,14 @@ class ForestryCalculator:
         Returns:
             pandas.DataFrame: Processed dataframe with all calculations
         """
+        import streamlit as st
+        
+        initial_count = len(df)
+        st.write(f"**Iniciando processamento com {initial_count} árvores**")
+        
         # Apply column mapping first
         results_df = self._apply_column_mapping(df.copy())
+        st.write(f"**Após mapeamento: {len(results_df)} árvores**")
         
         # Validate required columns
         required_columns = ['CAP (cm)', 'HT (m)']
@@ -83,15 +89,43 @@ class ForestryCalculator:
             if col not in results_df.columns:
                 raise ValueError(f"Required column '{col}' not found in data")
         
-        # Remove rows with missing values in critical columns
-        results_df = results_df.dropna(subset=required_columns)
+        # Check for missing values before removing them
+        missing_cap = results_df['CAP (cm)'].isna().sum()
+        missing_ht = results_df['HT (m)'].isna().sum()
+        if missing_cap > 0 or missing_ht > 0:
+            st.warning(f"Valores vazios encontrados: CAP={missing_cap}, HT={missing_ht}")
         
-        # Ensure numeric data types
+        # Remove rows with missing values in critical columns
+        before_dropna = len(results_df)
+        results_df = results_df.dropna(subset=required_columns)
+        after_dropna = len(results_df)
+        if before_dropna > after_dropna:
+            st.write(f"**Após remover linhas vazias: {after_dropna} árvores (-{before_dropna-after_dropna})**")
+        
+        # Convert to numeric and check for conversion errors
+        cap_before = len(results_df)
         results_df['CAP (cm)'] = pd.to_numeric(results_df['CAP (cm)'], errors='coerce')
         results_df['HT (m)'] = pd.to_numeric(results_df['HT (m)'], errors='coerce')
         
+        # Check how many became NaN after conversion
+        invalid_cap = results_df['CAP (cm)'].isna().sum()
+        invalid_ht = results_df['HT (m)'].isna().sum()
+        if invalid_cap > 0 or invalid_ht > 0:
+            st.warning(f"Valores não numéricos encontrados: CAP={invalid_cap}, HT={invalid_ht}")
+            
+            # Show some examples of invalid data
+            invalid_rows = results_df[results_df['CAP (cm)'].isna() | results_df['HT (m)'].isna()]
+            if len(invalid_rows) > 0:
+                st.write("Exemplos de dados inválidos:")
+                st.dataframe(invalid_rows[['CAP (cm)', 'HT (m)']].head())
+        
         # Remove rows with invalid numeric values
+        before_numeric_filter = len(results_df)
         results_df = results_df.dropna(subset=['CAP (cm)', 'HT (m)'])
+        after_numeric_filter = len(results_df)
+        
+        if before_numeric_filter > after_numeric_filter:
+            st.write(f"**Após remover dados não numéricos: {after_numeric_filter} árvores (-{before_numeric_filter-after_numeric_filter})**")
         
         # Calculate DAP in meters
         results_df['DAP (m)'] = results_df['CAP (cm)'].apply(self.calculate_dap)
@@ -114,6 +148,12 @@ class ForestryCalculator:
         calculation_columns = ['DAP (m)', 'VT (m³)', 'VT (m³/ha)', 'VT (st/ha)']
         for col in calculation_columns:
             results_df[col] = results_df[col].round(4)
+        
+        final_count = len(results_df)
+        st.success(f"**Processamento concluído: {final_count} árvores processadas de {initial_count} originais**")
+        
+        if final_count < initial_count:
+            st.error(f"❌ PERDA TOTAL: {initial_count - final_count} árvores foram removidas durante o processamento")
         
         return results_df
     

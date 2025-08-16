@@ -34,20 +34,20 @@ class ForestryCalculator:
         """
         return 0.000094 * (dap_cm ** 1.830398) * (ht ** 0.960913)
     
-    def calculate_volume_per_hectare(self, tree_volume, form_factor, plot_area_ha):
+    def calculate_volume_per_hectare(self, tree_volume, form_factor=None, plot_area_ha=None):
         """
-        Calculate volume per hectare.
-        Formula: VT_ha = (VT / FF) / plot_area_ha
+        Calculate volume per hectare using the user-specified formula.
+        Formula: VT(m³/ha) = VT(m³)/0,72
         
         Args:
             tree_volume (float): Tree volume in cubic meters
-            form_factor (float): Form factor
-            plot_area_ha (float): Plot area in hectares
+            form_factor (float): Not used in new formula (kept for compatibility)
+            plot_area_ha (float): Not used in new formula (kept for compatibility)
             
         Returns:
             float: Volume per hectare in cubic meters per hectare
         """
-        return (tree_volume / form_factor) / plot_area_ha
+        return tree_volume / 0.72
     
     def calculate_stereo_volume(self, volume_per_ha):
         """
@@ -155,9 +155,9 @@ class ForestryCalculator:
             axis=1
         )
         
-        # Calculate volume per hectare
+        # Calculate volume per hectare using the new formula: VT(m³/ha) = VT(m³)/0,72
         results_df['VT (m³/ha)'] = results_df['VT (m³)'].apply(
-            lambda vt: self.calculate_volume_per_hectare(vt, form_factor, plot_area_ha)
+            lambda vt: self.calculate_volume_per_hectare(vt)
         )
         
         # Calculate stereo volume per hectare

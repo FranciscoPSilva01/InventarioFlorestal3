@@ -83,42 +83,57 @@ def upload_data_tab():
                 # Clean column names by stripping whitespace
                 df.columns = df.columns.str.strip()
                 
-                # Show original columns for debugging
-                st.info(f"Colunas encontradas: {list(df.columns)}")
+                # Debug information - show exact column details
+                st.write("**Debug - Análise das Colunas:**")
+                for i, col in enumerate(df.columns):
+                    st.write(f"Coluna {i+1}: '{col}' (tipo: {type(col).__name__}, comprimento: {len(str(col))})")
                 
-                # Create a mapping dictionary
-                column_map = {}
+                # Create a more flexible mapping
+                new_columns = []
+                column_mapping_done = []
                 
                 for col in df.columns:
-                    col_upper = col.upper()
+                    original_col = str(col).strip()
+                    col_upper = original_col.upper()
                     
-                    # Check for tree number variations
-                    if col_upper in ['N°', 'N', 'NO', 'NUM', 'NUMERO', 'NÚMERO'] or 'N°' in col_upper:
-                        column_map[col] = 'Nº da árvore'
-                        st.success(f"✓ Encontrada coluna de numeração: '{col}' → 'Nº da árvore'")
+                    # Tree number column - more flexible matching
+                    if (col_upper == 'N°' or col_upper == 'N' or 'N°' in col_upper or 
+                        col_upper in ['NO', 'NUM', 'NUMERO', 'NÚMERO']):
+                        new_columns.append('Nº da árvore')
+                        column_mapping_done.append(f"✓ '{original_col}' → 'Nº da árvore'")
                     
-                    # Check for common name
+                    # Common name
                     elif 'NOME' in col_upper and 'COMUM' in col_upper:
-                        column_map[col] = 'Nome comum'
-                        st.success(f"✓ Encontrada coluna nome comum: '{col}' → 'Nome comum'")
+                        new_columns.append('Nome comum')
+                        column_mapping_done.append(f"✓ '{original_col}' → 'Nome comum'")
                     
-                    # Check for scientific name
+                    # Scientific name
                     elif 'NOME' in col_upper and ('CIENTÍFICO' in col_upper or 'CIENTIFICO' in col_upper):
-                        column_map[col] = 'Nome científico'
-                        st.success(f"✓ Encontrada coluna nome científico: '{col}' → 'Nome científico'")
+                        new_columns.append('Nome científico')
+                        column_mapping_done.append(f"✓ '{original_col}' → 'Nome científico'")
                     
-                    # Check for CAP
-                    elif 'CAP' in col_upper and ('CM' in col_upper or '(CM)' in col_upper):
-                        column_map[col] = 'CAP (cm)'
-                        st.success(f"✓ Encontrada coluna CAP: '{col}' → 'CAP (cm)'")
+                    # CAP column
+                    elif 'CAP' in col_upper:
+                        new_columns.append('CAP (cm)')
+                        column_mapping_done.append(f"✓ '{original_col}' → 'CAP (cm)'")
                     
-                    # Check for height
-                    elif ('HT' in col_upper or 'ALTURA' in col_upper) and ('M' in col_upper or '(M)' in col_upper):
-                        column_map[col] = 'HT (m)'
-                        st.success(f"✓ Encontrada coluna altura: '{col}' → 'HT (m)'")
+                    # Height column - flexible matching
+                    elif 'HT' in col_upper or 'ALTURA' in col_upper:
+                        new_columns.append('HT (m)')
+                        column_mapping_done.append(f"✓ '{original_col}' → 'HT (m)'")
+                    
+                    # Keep original name if no mapping found
+                    else:
+                        new_columns.append(original_col)
+                        column_mapping_done.append(f"• '{original_col}' → mantido como está")
                 
-                # Apply the mapping
-                df = df.rename(columns=column_map)
+                # Apply new column names
+                df.columns = new_columns
+                
+                # Show mapping results
+                st.write("**Resultado do Mapeamento:**")
+                for mapping in column_mapping_done:
+                    st.write(mapping)
                 
                 # Create combined species name column
                 if 'Nome comum' in df.columns and 'Nome científico' in df.columns:

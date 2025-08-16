@@ -13,40 +13,52 @@ def detect_and_map_columns(df):
     
     mapping_results = []
     new_columns = []
+    used_mappings = set()
     
-    for col in df.columns:
+    for i, col in enumerate(df.columns):
         original_col = str(col).strip()
         col_upper = original_col.upper()
+        mapped_name = None
         
         # Detectar coluna de numeração das árvores
-        if any(pattern in col_upper for pattern in ['N°', 'N', 'NO', 'NUM', 'NUMERO', 'NÚMERO']):
-            new_columns.append('Nº da árvore')
-            mapping_results.append(f"✓ '{original_col}' → 'Nº da árvore'")
+        if ('N°' in col_upper or col_upper in ['N', 'NO', 'NUM', 'NUMERO', 'NÚMERO']) and 'Nº da árvore' not in used_mappings:
+            mapped_name = 'Nº da árvore'
+            used_mappings.add('Nº da árvore')
         
         # Detectar nome comum
-        elif 'NOME' in col_upper and 'COMUM' in col_upper:
-            new_columns.append('Nome comum')
-            mapping_results.append(f"✓ '{original_col}' → 'Nome comum'")
+        elif 'NOME' in col_upper and 'COMUM' in col_upper and 'Nome comum' not in used_mappings:
+            mapped_name = 'Nome comum'
+            used_mappings.add('Nome comum')
         
         # Detectar nome científico
-        elif 'NOME' in col_upper and ('CIENTÍFICO' in col_upper or 'CIENTIFICO' in col_upper):
-            new_columns.append('Nome científico')
-            mapping_results.append(f"✓ '{original_col}' → 'Nome científico'")
+        elif 'NOME' in col_upper and ('CIENTÍFICO' in col_upper or 'CIENTIFICO' in col_upper) and 'Nome científico' not in used_mappings:
+            mapped_name = 'Nome científico'
+            used_mappings.add('Nome científico')
         
         # Detectar CAP
-        elif 'CAP' in col_upper:
-            new_columns.append('CAP (cm)')
-            mapping_results.append(f"✓ '{original_col}' → 'CAP (cm)'")
+        elif 'CAP' in col_upper and 'CAP (cm)' not in used_mappings:
+            mapped_name = 'CAP (cm)'
+            used_mappings.add('CAP (cm)')
         
         # Detectar altura (HT)
-        elif 'HT' in col_upper or 'ALTURA' in col_upper:
-            new_columns.append('HT (m)')
-            mapping_results.append(f"✓ '{original_col}' → 'HT (m)'")
+        elif ('HT' in col_upper or 'ALTURA' in col_upper) and 'HT (m)' not in used_mappings:
+            mapped_name = 'HT (m)'
+            used_mappings.add('HT (m)')
         
-        # Manter coluna original se não mapear
+        # Se não mapear ou já estiver usado, manter nome original
+        if mapped_name is None:
+            # Garantir nome único
+            base_name = original_col
+            counter = 1
+            while base_name in new_columns:
+                base_name = f"{original_col}_{counter}"
+                counter += 1
+            mapped_name = base_name
+            mapping_results.append(f"• '{original_col}' → mantido como '{mapped_name}'")
         else:
-            new_columns.append(original_col)
-            mapping_results.append(f"• '{original_col}' → mantido")
+            mapping_results.append(f"✓ '{original_col}' → '{mapped_name}'")
+        
+        new_columns.append(mapped_name)
     
     # Aplicar novos nomes das colunas
     df.columns = new_columns
@@ -66,6 +78,9 @@ def detect_and_map_columns(df):
     st.success("Mapeamento de colunas realizado:")
     for result in mapping_results:
         st.write(result)
+    
+    # Mostrar colunas finais
+    st.info(f"Colunas finais: {list(df.columns)}")
     
     return df
 

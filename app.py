@@ -76,10 +76,13 @@ def upload_data_tab():
                 st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
                 st.dataframe(df.head())
                 
+                # Debug: show original columns
+                st.info(f"Colunas encontradas: {list(df.columns)}")
+                
                 # Map column names to expected format
                 column_mapping = {
                     'N°': 'Nº da árvore',
-                    'NOME COMUM': 'Nome comum/científico',
+                    'NOME COMUM': 'Nome comum/científico', 
                     'NOME CIENTÍFICO': 'Nome científico',
                     'CAP (cm)': 'CAP (cm)',
                     'HT(m)': 'HT (m)',
@@ -90,15 +93,22 @@ def upload_data_tab():
                 for old_name, new_name in column_mapping.items():
                     if old_name in df.columns:
                         df = df.rename(columns={old_name: new_name})
+                        st.success(f"Coluna '{old_name}' mapeada para '{new_name}'")
                 
                 # Combine nome comum and científico if they are separate
                 if 'Nome comum/científico' not in df.columns:
                     if 'NOME COMUM' in df.columns and 'NOME CIENTÍFICO' in df.columns:
                         df['Nome comum/científico'] = df['NOME COMUM'].astype(str) + ' / ' + df['NOME CIENTÍFICO'].astype(str)
+                        st.success("Combinadas colunas NOME COMUM e NOME CIENTÍFICO")
                     elif 'NOME COMUM' in df.columns:
                         df['Nome comum/científico'] = df['NOME COMUM']
+                        st.success("Coluna NOME COMUM mapeada para Nome comum/científico")
                     elif 'NOME CIENTÍFICO' in df.columns:
                         df['Nome comum/científico'] = df['NOME CIENTÍFICO']
+                        st.success("Coluna NOME CIENTÍFICO mapeada para Nome comum/científico")
+                
+                # Show columns after mapping
+                st.info(f"Colunas após mapeamento: {list(df.columns)}")
                 
                 # Validate required columns after mapping
                 required_columns = ['Nº da árvore', 'Nome comum/científico', 'CAP (cm)', 'HT (m)']

@@ -6,6 +6,67 @@ from utils.calculations import ForestryCalculator
 from utils.statistics import StatisticsAnalyzer
 from utils.report_generator import ReportGenerator
 
+def calculate_species_volume_summary(results_df, project_info):
+    """
+    Calculate volume summary by species.
+    
+    Args:
+        results_df (pandas.DataFrame): Processed data with calculations
+        project_info (dict): Project information with area data
+        
+    Returns:
+        pandas.DataFrame: Species volume summary table
+    """
+    # Identificar coluna de espécie (nome comum ou científico)
+    species_column = None
+    for col in results_df.columns:
+        col_upper = str(col).upper()
+        if any(keyword in col_upper for keyword in ['NOME COMUM', 'ESPÉCIE', 'SPECIES', 'NOME CIENTÍFICO']):
+            species_column = col
+            break
+    
+    if not species_column or results_df[species_column].isna().all():
+        return pd.DataFrame()  # Retorna DataFrame vazio se não encontrar coluna de espécie
+    
+    # Calcular métricas por espécie
+    plot_area_ha = project_info['plot_area']
+    total_area_ha = project_info['total_area']
+    
+    species_groups = results_df.groupby(species_column).agg({
+        'DAP (cm)': ['count', 'mean'],
+        'HT (m)': 'mean',
+        'VT (m³)': 'sum',
+        'VT (m³/ha)': 'sum'
+    }).reset_index()
+    
+    # Simplificar nomes das colunas
+    species_groups.columns = [
+        'Espécie',
+        'n_trees_plot',
+        'DAP médio',
+        'Altura média', 
+        'Soma de VT (m³)',
+        'VT (m³)/ha'
+    ]
+    
+    # Calcular n/ha (árvores por hectare na parcela)
+    species_groups['n/ha'] = species_groups['n_trees_plot'] / plot_area_ha
+    
+    # Calcular n total (extrapolação para área total)
+    species_groups['n total'] = species_groups['n/ha'] * total_area_ha
+    
+    # Calcular V/ha(m³)/Área total/ha (volume extrapolado para área total)
+    species_groups['V/ha(m³)/Área total/ha'] = species_groups['VT (m³)/ha'] * (total_area_ha / plot_area_ha)
+    
+    # Reordenar colunas conforme solicitado
+    final_columns = [
+        'Espécie', 'n/ha', 'n total', 'DAP médio', 
+        'Altura média', 'Soma de VT (m³)', 'VT (m³)/ha', 
+        'V/ha(m³)/Área total/ha'
+    ]
+    
+    return species_groups[final_columns].sort_values('VT (m³)/ha', ascending=False)
+
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
     df_original = df.copy()
@@ -350,6 +411,26 @@ def processing_tab():
     with col4:
         st.metric("DAP Médio (cm)", f"{results_df['DAP (cm)'].mean():.4f}")
         st.metric("Altura Média (m)", f"{results_df['HT (m)'].mean():.2f}")
+
+    # Volume médio por espécie
+    st.subheader("Volume Médio por Espécie")
+    species_summary = calculate_species_volume_summary(results_df, project_info)
+    
+    if not species_summary.empty:
+        st.dataframe(
+            species_summary.style.format({
+                'n/ha': '{:.2f}',
+                'n total': '{:.0f}',
+                'DAP médio': '{:.2f}',
+                'Altura média': '{:.2f}',
+                'Soma de VT (m³)': '{:.4f}',
+                'VT (m³)/ha': '{:.4f}',
+                'V/ha(m³)/Área total/ha': '{:.3f}'
+            }),
+            use_container_width=True
+        )
+    else:
+        st.warning("Dados de espécie não disponíveis. Verifique se a planilha possui colunas de nome comum ou científico.")
 
 def statistics_tab():
     st.header("📊 Estatísticas e Precisão")

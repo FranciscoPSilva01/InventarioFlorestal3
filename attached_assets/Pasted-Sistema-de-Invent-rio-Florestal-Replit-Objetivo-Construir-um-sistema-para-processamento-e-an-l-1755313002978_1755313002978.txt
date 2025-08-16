@@ -1,0 +1,130 @@
+Sistema de Inventário Florestal (Replit)
+🎯 Objetivo
+
+Construir um sistema para processamento e análise de inventários florestais, permitindo que o usuário insira ou carregue dados de campo e obtenha automaticamente cálculos de volume, estatísticas de precisão e relatórios consolidados.
+
+⚙️ Funcionalidades
+1. Upload de dados de campo
+
+Aba específica para upload de planilhas (.csv ou .xlsx) contendo:
+
+Nº da árvore
+
+Nome comum / científico
+
+CAP (cm)
+
+HT (m) (altura total ou comercial, dependendo do levantamento)
+
+Opções adicionais que o usuário deve informar:
+
+Nome do projeto
+
+Quantidade de parcelas
+
+Dimensões da parcela (m x m)
+
+Área total a ser suprimida (ha)
+
+Fator de forma (FF) (campo de entrada)
+
+O sistema deve calcular automaticamente a área total amostrada e a porcentagem amostrada em relação à área de supressão.
+
+2. Cálculos
+
+O sistema deve processar cada linha da planilha aplicando as seguintes fórmulas:
+
+DAP (cm → m)
+
+DAP=CAPπ
+DAP=
+π
+CAP
+	​
+
+
+Volume por árvore (VT m³)
+
+VT=0,000094⋅(DAP1,830398)⋅(HT0,960913)
+VT=0,000094⋅(DAP
+1,830398
+)⋅(HT
+0,960913
+)
+
+Volume por hectare (VT m³/ha)
+
+VTha=VTFF
+VT
+ha
+	​
+
+=
+FF
+VT
+	​
+
+
+Volume em estéreo/hectare (VT st/ha)
+
+VTst/ha=VTha×2,65
+VT
+st/ha
+	​
+
+=VT
+ha
+	​
+
+×2,65
+3. Estatísticas e Precisão
+
+O sistema deve gerar automaticamente:
+
+Média, variância e desvio padrão dos volumes.
+
+Intervalo de confiança de 90% para as estimativas de volume.
+
+Erro amostral médio (%) em relação à média.
+
+⚠️ Caso o erro seja maior que 20%, o sistema deve emitir alerta:
+👉 “Amostragem não atingiu a precisão desejada (erro > 20%). Recomendado aumentar o número de parcelas.”
+
+✅ Caso o erro seja ≤ 20%, o sistema deve informar:
+👉 “Amostragem atingiu a precisão desejada (erro ≤ 20%).”
+
+4. Saídas do sistema
+
+Após o processamento, o sistema deve exibir:
+
+Tabela com todos os cálculos (DAP, VT m³, VT m³/ha, VT st/ha).
+
+Estatísticas gerais (média, variância, erro amostral, intervalo de confiança).
+
+Porcentagem da área amostrada em relação à área de supressão.
+
+Relatório final resumido do inventário (exportável em PDF ou Excel).
+
+🖥️ Interface
+
+Desenvolvida em Python (Streamlit ou Flask) dentro do Replit.
+
+Menu principal com abas:
+
+📂 Upload de Dados – subir planilha, definir projeto, área e parcelas.
+
+⚙️ Processamento – exibir cálculos automáticos por árvore/parcela.
+
+📊 Estatísticas – mostrar médias, variância, erro, precisão.
+
+📑 Relatório – gerar exportação em PDF/Excel.
+
+🔒 Regras importantes
+
+O usuário precisa informar o Fator de Forma (FF) antes do cálculo de VT m³/ha.
+
+Todos os cálculos devem ser feitos com 4 casas decimais para manter a precisão.
+
+O sistema deve aceitar diferentes tamanhos de parcelas e ajustar automaticamente a expansão para hectare.
+
+Caso o usuário esqueça de preencher algum dado obrigatório, o sistema deve emitir aviso.

@@ -25,6 +25,10 @@ def main():
         st.session_state.statistics = None
     if 'project_info' not in st.session_state:
         st.session_state.project_info = None
+    if 'file_uploaded' not in st.session_state:
+        st.session_state.file_uploaded = False
+    if 'input_data' not in st.session_state:
+        st.session_state.input_data = None
     
     # Create tabs
     tab1, tab2, tab3, tab4 = st.tabs(["📂 Upload de Dados", "⚙️ Processamento", "📊 Estatísticas", "📑 Relatório"])
@@ -138,6 +142,11 @@ def upload_data_tab():
                     st.info("Colunas encontradas na sua planilha: " + ", ".join(df.columns.tolist()))
                 else:
                     st.session_state.input_data = df
+                    st.session_state.file_uploaded = True
+                    st.success("✅ Dados da planilha salvos e prontos para processamento!")
+                    
+                    # Show data summary
+                    st.info(f"📊 Resumo: {len(df)} árvores carregadas com {len(df.columns)} colunas")
                     
             except Exception as e:
                 st.error(f"Erro ao carregar o arquivo: {str(e)}")
@@ -156,7 +165,7 @@ def upload_data_tab():
             errors.append("Área total deve ser positiva")
         if not (0.1 <= form_factor <= 1.0):
             errors.append("Fator de Forma deve estar entre 0.1 e 1.0")
-        if 'input_data' not in st.session_state:
+        if not st.session_state.file_uploaded or st.session_state.input_data is None:
             errors.append("Nenhum arquivo foi carregado")
         
         if errors:

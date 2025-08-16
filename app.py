@@ -76,39 +76,57 @@ def upload_data_tab():
                 st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
                 st.dataframe(df.head())
                 
-                # Debug: show original columns
-                st.info(f"Colunas encontradas: {list(df.columns)}")
+                # Clean column names by stripping whitespace and normalizing
+                df.columns = df.columns.str.strip()
                 
-                # Map column names to expected format
-                column_mapping = {
-                    'N°': 'Nº da árvore',
-                    'NOME COMUM': 'Nome comum/científico', 
-                    'NOME CIENTÍFICO': 'Nome científico',
-                    'CAP (cm)': 'CAP (cm)',
-                    'HT(m)': 'HT (m)',
-                    'Altura total HT(m)': 'HT (m)'
-                }
+                # Debug: show original columns with their exact representation
+                st.info(f"Colunas encontradas: {[repr(col) for col in df.columns]}")
                 
-                # Rename columns if they exist with different names
-                for old_name, new_name in column_mapping.items():
-                    if old_name in df.columns:
-                        df = df.rename(columns={old_name: new_name})
-                        st.success(f"Coluna '{old_name}' mapeada para '{new_name}'")
+                # More comprehensive column mapping including variations
+                original_columns = list(df.columns)
                 
-                # Combine nome comum and científico if they are separate
-                if 'Nome comum/científico' not in df.columns:
-                    if 'NOME COMUM' in df.columns and 'NOME CIENTÍFICO' in df.columns:
-                        df['Nome comum/científico'] = df['NOME COMUM'].astype(str) + ' / ' + df['NOME CIENTÍFICO'].astype(str)
-                        st.success("Combinadas colunas NOME COMUM e NOME CIENTÍFICO")
-                    elif 'NOME COMUM' in df.columns:
-                        df['Nome comum/científico'] = df['NOME COMUM']
-                        st.success("Coluna NOME COMUM mapeada para Nome comum/científico")
-                    elif 'NOME CIENTÍFICO' in df.columns:
-                        df['Nome comum/científico'] = df['NOME CIENTÍFICO']
-                        st.success("Coluna NOME CIENTÍFICO mapeada para Nome comum/científico")
+                # Map common variations
+                for i, col in enumerate(df.columns):
+                    col_clean = col.strip().upper()
+                    
+                    # Map tree number column variations
+                    if col_clean in ['N°', 'N', 'NO', 'NUM', 'NUMERO', 'NÚMERO']:
+                        df = df.rename(columns={col: 'Nº da árvore'})
+                        st.success(f"Coluna '{col}' mapeada para 'Nº da árvore'")
+                    
+                    # Map common name variations
+                    elif col_clean in ['NOME COMUM', 'NOME_COMUM', 'COMMON NAME']:
+                        df = df.rename(columns={col: 'Nome comum'})
+                        st.success(f"Coluna '{col}' mapeada para 'Nome comum'")
+                    
+                    # Map scientific name variations
+                    elif col_clean in ['NOME CIENTÍFICO', 'NOME_CIENTIFICO', 'SCIENTIFIC NAME']:
+                        df = df.rename(columns={col: 'Nome científico'})
+                        st.success(f"Coluna '{col}' mapeada para 'Nome científico'")
+                    
+                    # Map CAP variations
+                    elif 'CAP' in col_clean and 'CM' in col_clean:
+                        df = df.rename(columns={col: 'CAP (cm)'})
+                        st.success(f"Coluna '{col}' mapeada para 'CAP (cm)'")
+                    
+                    # Map height variations
+                    elif ('HT' in col_clean or 'ALTURA' in col_clean) and ('M' in col_clean or 'METRO' in col_clean):
+                        df = df.rename(columns={col: 'HT (m)'})
+                        st.success(f"Coluna '{col}' mapeada para 'HT (m)'")
                 
-                # Show columns after mapping
-                st.info(f"Colunas após mapeamento: {list(df.columns)}")
+                # Create combined name column if separate common and scientific names exist
+                if 'Nome comum' in df.columns and 'Nome científico' in df.columns:
+                    df['Nome comum/científico'] = df['Nome comum'].astype(str) + ' / ' + df['Nome científico'].astype(str)
+                    st.success("Combinadas colunas de nome comum e científico")
+                elif 'Nome comum' in df.columns:
+                    df['Nome comum/científico'] = df['Nome comum']
+                    st.success("Usando nome comum como identificação da espécie")
+                elif 'Nome científico' in df.columns:
+                    df['Nome comum/científico'] = df['Nome científico']
+                    st.success("Usando nome científico como identificação da espécie")
+                
+                # Show final columns
+                st.info(f"Colunas finais: {list(df.columns)}")
                 
                 # Validate required columns after mapping
                 required_columns = ['Nº da árvore', 'Nome comum/científico', 'CAP (cm)', 'HT (m)']

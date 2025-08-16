@@ -63,7 +63,7 @@ def upload_data_tab():
         uploaded_file = st.file_uploader(
             "Selecione a planilha com dados de campo",
             type=['csv', 'xlsx'],
-            help="A planilha deve conter as colunas: Nº da árvore, Nome comum/científico, CAP (cm), HT (m)"
+            help="A planilha deve conter as colunas: UA, N°, NOME COMUM, NOME CIENTÍFICO, CAP (cm), HT(m)"
         )
         
         if uploaded_file is not None:
@@ -76,13 +76,38 @@ def upload_data_tab():
                 st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
                 st.dataframe(df.head())
                 
-                # Validate required columns
+                # Map column names to expected format
+                column_mapping = {
+                    'N°': 'Nº da árvore',
+                    'NOME COMUM': 'Nome comum/científico',
+                    'NOME CIENTÍFICO': 'Nome científico',
+                    'CAP (cm)': 'CAP (cm)',
+                    'HT(m)': 'HT (m)',
+                    'Altura total HT(m)': 'HT (m)'
+                }
+                
+                # Rename columns if they exist with different names
+                for old_name, new_name in column_mapping.items():
+                    if old_name in df.columns:
+                        df = df.rename(columns={old_name: new_name})
+                
+                # Combine nome comum and científico if they are separate
+                if 'Nome comum/científico' not in df.columns:
+                    if 'NOME COMUM' in df.columns and 'NOME CIENTÍFICO' in df.columns:
+                        df['Nome comum/científico'] = df['NOME COMUM'].astype(str) + ' / ' + df['NOME CIENTÍFICO'].astype(str)
+                    elif 'NOME COMUM' in df.columns:
+                        df['Nome comum/científico'] = df['NOME COMUM']
+                    elif 'NOME CIENTÍFICO' in df.columns:
+                        df['Nome comum/científico'] = df['NOME CIENTÍFICO']
+                
+                # Validate required columns after mapping
                 required_columns = ['Nº da árvore', 'Nome comum/científico', 'CAP (cm)', 'HT (m)']
                 missing_columns = [col for col in required_columns if col not in df.columns]
                 
                 if missing_columns:
                     st.error(f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}")
-                    st.info("Certifique-se de que sua planilha contém as colunas: " + ", ".join(required_columns))
+                    st.info("Certifique-se de que sua planilha contém as colunas: UA, N°, NOME COMUM, NOME CIENTÍFICO, CAP (cm), HT(m)")
+                    st.info("Colunas encontradas na sua planilha: " + ", ".join(df.columns.tolist()))
                 else:
                     st.session_state.input_data = df
                     

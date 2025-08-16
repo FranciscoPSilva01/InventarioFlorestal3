@@ -74,8 +74,8 @@ class ForestryCalculator:
         Returns:
             pandas.DataFrame: Processed dataframe with all calculations
         """
-        # Create a copy of the input dataframe
-        results_df = df.copy()
+        # Apply column mapping first
+        results_df = self._apply_column_mapping(df.copy())
         
         # Validate required columns
         required_columns = ['CAP (cm)', 'HT (m)']
@@ -129,6 +129,9 @@ class ForestryCalculator:
         """
         errors = []
         
+        # Apply column mapping first
+        df = self._apply_column_mapping(df)
+        
         # Check for required columns
         required_columns = ['Nº da árvore', 'Nome comum/científico', 'CAP (cm)', 'HT (m)']
         missing_columns = [col for col in required_columns if col not in df.columns]
@@ -162,3 +165,41 @@ class ForestryCalculator:
                 errors.append("Valores negativos ou zero encontrados na coluna HT (m)")
         
         return errors
+    
+    def _apply_column_mapping(self, df):
+        """
+        Apply column name mapping to handle different column name formats.
+        
+        Args:
+            df (pandas.DataFrame): Input dataframe
+            
+        Returns:
+            pandas.DataFrame: Dataframe with mapped column names
+        """
+        df = df.copy()
+        
+        # Map column names to expected format
+        column_mapping = {
+            'N°': 'Nº da árvore',
+            'NOME COMUM': 'Nome comum/científico',
+            'NOME CIENTÍFICO': 'Nome científico',
+            'CAP (cm)': 'CAP (cm)',
+            'HT(m)': 'HT (m)',
+            'Altura total HT(m)': 'HT (m)'
+        }
+        
+        # Rename columns if they exist with different names
+        for old_name, new_name in column_mapping.items():
+            if old_name in df.columns:
+                df = df.rename(columns={old_name: new_name})
+        
+        # Combine nome comum and científico if they are separate
+        if 'Nome comum/científico' not in df.columns:
+            if 'NOME COMUM' in df.columns and 'NOME CIENTÍFICO' in df.columns:
+                df['Nome comum/científico'] = df['NOME COMUM'].astype(str) + ' / ' + df['NOME CIENTÍFICO'].astype(str)
+            elif 'NOME COMUM' in df.columns:
+                df['Nome comum/científico'] = df['NOME COMUM']
+            elif 'NOME CIENTÍFICO' in df.columns:
+                df['Nome comum/científico'] = df['NOME CIENTÍFICO']
+        
+        return df

@@ -8,8 +8,13 @@ from utils.report_generator import ReportGenerator
 
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
+    df_original = df.copy()
     df = df.copy()
     df.columns = df.columns.str.strip()
+    
+    # Contar linhas iniciais
+    initial_rows = len(df)
+    st.write(f"**Processamento iniciado com {initial_rows} linhas**")
     
     mapping_results = []
     new_columns = []
@@ -62,6 +67,7 @@ def detect_and_map_columns(df):
     
     # Aplicar novos nomes das colunas
     df.columns = new_columns
+    st.write(f"**Após renomear colunas: {len(df)} linhas**")
     
     # Criar coluna combinada de nomes se necessário
     if 'Nome comum' in df.columns and 'Nome científico' in df.columns:
@@ -73,6 +79,13 @@ def detect_and_map_columns(df):
     elif 'Nome científico' in df.columns:
         df['Nome comum/científico'] = df['Nome científico']
         mapping_results.append("✓ Usando nome científico como identificação")
+    
+    final_rows = len(df)
+    st.write(f"**Processamento finalizado com {final_rows} linhas**")
+    
+    # Verificar se alguma linha foi perdida
+    if final_rows < initial_rows:
+        st.error(f"❌ PERDA DE DADOS: {initial_rows - final_rows} linhas foram removidas durante o mapeamento!")
     
     # Mostrar resultados do mapeamento
     st.success("Mapeamento de colunas realizado:")
@@ -155,21 +168,51 @@ def upload_data_tab():
                 else:
                     df = pd.read_excel(uploaded_file)
                 
-                st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
+                st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados na planilha original.")
                 st.dataframe(df.head())
+                
+                # Mostrar informações detalhadas sobre os dados originais
+                st.info(f"📊 Dados originais: {len(df)} linhas, {len(df.columns)} colunas")
                 
                 # Detectar automaticamente as colunas
                 df_processed = detect_and_map_columns(df)
+                
+                # Verificar se perdemos dados durante o processamento
+                if len(df_processed) < len(df):
+                    lost_rows = len(df) - len(df_processed)
+                    st.warning(f"⚠️ Atenção: {lost_rows} linhas foram removidas durante o processamento (provavelmente linhas vazias ou com dados inválidos)")
+                    
+                    # Mostrar quais linhas foram removidas
+                    st.write("**Análise de dados removidos:**")
+                    original_indices = set(df.index)
+                    processed_indices = set(df_processed.index)
+                    removed_indices = original_indices - processed_indices
+                    
+                    if removed_indices:
+                        st.write(f"Linhas removidas: {sorted(list(removed_indices))}")
                 
                 # Salvar dados automaticamente
                 st.session_state.input_data = df_processed
                 st.session_state.file_uploaded = True
                 st.success("✅ Planilha carregada e dados salvos automaticamente!")
-                st.info(f"📊 {len(df_processed)} árvores detectadas e prontas para processamento")
+                st.info(f"📊 {len(df_processed)} árvores válidas detectadas e prontas para processamento")
                 
                 # Mostrar preview dos dados processados
                 st.subheader("Preview dos Dados Processados")
                 st.dataframe(df_processed.head(), use_container_width=True)
+                
+                # Mostrar estatísticas dos dados
+                st.subheader("Resumo dos Dados")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Original", len(df))
+                with col2:
+                    st.metric("Total Processado", len(df_processed))
+                with col3:
+                    if len(df_processed) < len(df):
+                        st.metric("Linhas Removidas", len(df) - len(df_processed), delta=-(len(df) - len(df_processed)))
+                    else:
+                        st.metric("Linhas Removidas", 0)
                     
             except Exception as e:
                 st.error(f"Erro ao carregar o arquivo: {str(e)}")

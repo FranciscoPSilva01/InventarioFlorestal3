@@ -245,7 +245,8 @@ def calculate_plot_averages_table(results_df):
     # Renomear colunas
     plot_stats.columns = ['Parcela', 'DAP médio', 'HT média', 'VT (m³)']
     
-    # Formatar valores
+    # Converter Parcela para string e formatar valores
+    plot_stats['Parcela'] = plot_stats['Parcela'].astype(str)
     plot_stats['DAP médio'] = plot_stats['DAP médio'].round(2)
     plot_stats['HT média'] = plot_stats['HT média'].round(2)
     plot_stats['VT (m³)'] = plot_stats['VT (m³)'].round(2)
@@ -253,12 +254,16 @@ def calculate_plot_averages_table(results_df):
     # Adicionar linha de total
     total_row = pd.DataFrame({
         'Parcela': ['Total'],
-        'DAP médio': [''],
-        'HT média': [''],
+        'DAP médio': [None],
+        'HT média': [None],
         'VT (m³)': [plot_stats['VT (m³)'].sum().round(2)]
     })
     
     plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
+    
+    # Converter colunas numéricas para object para permitir valores None na linha total
+    plot_averages_table['DAP médio'] = plot_averages_table['DAP médio'].astype('object')
+    plot_averages_table['HT média'] = plot_averages_table['HT média'].astype('object')
     
     return plot_averages_table
 

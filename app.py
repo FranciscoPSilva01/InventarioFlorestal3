@@ -248,10 +248,16 @@ def calculate_plot_averages_table(results_df, project_info):
         plot_trees = results_df.iloc[start_idx:end_idx]
         
         if len(plot_trees) > 0:
-            # Calcular médias das árvores desta parcela específica
-            dap_medio = plot_trees['DAP (cm)'].mean()
-            ht_media = plot_trees['HT (m)'].mean()
-            # VT deve ser a somatória, não média
+            # DAP médio = soma dos DAPs das espécies da parcela ÷ quantidade de espécies da parcela
+            dap_sum = plot_trees['DAP (cm)'].sum()
+            num_species_in_plot = len(plot_trees)
+            dap_medio = dap_sum / num_species_in_plot
+            
+            # HT média = soma das alturas das espécies da parcela ÷ quantidade de espécies da parcela
+            ht_sum = plot_trees['HT (m)'].sum()
+            ht_media = ht_sum / num_species_in_plot
+            
+            # VT deve ser a somatória de todos os volumes das espécies da parcela
             vt_total = plot_trees['VT (m³)'].sum()
             
             plot_data.append({

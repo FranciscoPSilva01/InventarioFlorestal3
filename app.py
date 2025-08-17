@@ -213,57 +213,72 @@ def create_sinaflor_table(results_df, statistics, project_info):
     sinaflor_table = pd.DataFrame(sinaflor_data)
     return sinaflor_table
 
-def calculate_plot_averages_table(results_df):
+def calculate_plot_averages_table(results_df, project_info):
     """
-    Calcula médias por parcela para DAP, altura e volume.
+    Calcula médias por parcela para DAP, altura e volume baseado nas informações do projeto.
     
     Args:
-        results_df (pandas.DataFrame): Dados processados com informações de parcela
+        results_df (pandas.DataFrame): Dados processados
+        project_info (dict): Informações do projeto incluindo número de parcelas
         
     Returns:
         pandas.DataFrame: Tabela com médias por parcela
     """
-    # Verificar se existe coluna de parcela
-    plot_columns = [col for col in results_df.columns if any(term in col.lower() for term in ['parcela', 'plot', 'quadrat'])]
+    num_plots = project_info['num_plots']
+    total_trees = len(results_df)
     
-    if not plot_columns:
-        # Se não há coluna de parcela, criar uma baseada no índice ou assumir parcela única
-        results_df_copy = results_df.copy()
-        results_df_copy['Parcela'] = 1
-        plot_col = 'Parcela'
-    else:
-        results_df_copy = results_df.copy()
-        plot_col = plot_columns[0]
+    # Calcular árvores por parcela (distribuição uniforme)
+    trees_per_plot = total_trees // num_plots
+    remaining_trees = total_trees % num_plots
     
-    # Agrupar por parcela e calcular médias
-    plot_stats = results_df_copy.groupby(plot_col).agg({
-        'DAP (cm)': 'mean',
-        'HT (m)': 'mean', 
-        'VT (m³)': 'mean'
-    }).reset_index()
+    plot_data = []
+    start_idx = 0
     
-    # Renomear colunas
-    plot_stats.columns = ['Parcela', 'DAP médio', 'HT média', 'VT (m³)']
+    for plot_num in range(1, num_plots + 1):
+        # Determinar quantas árvores para esta parcela
+        if plot_num <= remaining_trees:
+            end_idx = start_idx + trees_per_plot + 1
+        else:
+            end_idx = start_idx + trees_per_plot
+        
+        # Selecionar árvores desta parcela
+        plot_trees = results_df.iloc[start_idx:end_idx]
+        
+        if len(plot_trees) > 0:
+            # Calcular médias para a parcela
+            dap_medio = plot_trees['DAP (cm)'].mean()
+            ht_media = plot_trees['HT (m)'].mean()
+            vt_medio = plot_trees['VT (m³)'].mean()
+            
+            plot_data.append({
+                'Parcela': str(plot_num),
+                'DAP médio': round(dap_medio, 2),
+                'HT média': round(ht_media, 2),
+                'VT (m³)': round(vt_medio, 2)
+            })
+        
+        start_idx = end_idx
     
-    # Converter Parcela para string e formatar valores
-    plot_stats['Parcela'] = plot_stats['Parcela'].astype(str)
-    plot_stats['DAP médio'] = plot_stats['DAP médio'].round(2)
-    plot_stats['HT média'] = plot_stats['HT média'].round(2)
-    plot_stats['VT (m³)'] = plot_stats['VT (m³)'].round(2)
+    # Criar DataFrame
+    plot_stats = pd.DataFrame(plot_data)
     
     # Adicionar linha de total
-    total_row = pd.DataFrame({
-        'Parcela': ['Total'],
-        'DAP médio': [None],
-        'HT média': [None],
-        'VT (m³)': [plot_stats['VT (m³)'].sum().round(2)]
-    })
-    
-    plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
-    
-    # Converter colunas numéricas para object para permitir valores None na linha total
-    plot_averages_table['DAP médio'] = plot_averages_table['DAP médio'].astype('object')
-    plot_averages_table['HT média'] = plot_averages_table['HT média'].astype('object')
+    if not plot_stats.empty:
+        total_volume = plot_stats['VT (m³)'].sum()
+        total_row = pd.DataFrame({
+            'Parcela': ['Total'],
+            'DAP médio': [None],
+            'HT média': [None],
+            'VT (m³)': [round(total_volume, 2)]
+        })
+        
+        plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
+        
+        # Converter colunas para object para permitir valores None na linha total
+        plot_averages_table['DAP médio'] = plot_averages_table['DAP médio'].astype('object')
+        plot_averages_table['HT média'] = plot_averages_table['HT média'].astype('object')
+    else:
+        plot_averages_table = plot_stats
     
     return plot_averages_table
 
@@ -594,7 +609,8 @@ def processing_tab():
     
     # Volume médio por parcela
     st.subheader("Volume Médio por Parcela")
-    plot_averages_table = calculate_plot_averages_table(results_df)
+    project_info = st.session_state.project_info
+    plot_averages_table = calculate_plot_averages_table(results_df, project_info)
     
     st.dataframe(
         plot_averages_table,

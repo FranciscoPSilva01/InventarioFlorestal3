@@ -113,29 +113,28 @@ def calculate_suppression_volume_table(results_df, project_info):
     """
     # Calcular totais
     total_area_ha = project_info['total_area']
-    total_volume_m3 = results_df['VT (m³)'].sum()
+    
+    # Volume (m³/ha) deve ser o somatório de todos os valores da coluna VT(m³)/ha da tabela Volume Médio por Espécie
     total_volume_m3_ha = results_df['VT (m³/ha)'].sum()
     total_volume_st_ha = results_df['VT (st/ha)'].sum()
     
     # Calcular volume total na área de supressão (m³)
-    # Volume por hectare multiplicado pela área total
     volume_total_suprimido_m3 = total_volume_m3_ha * total_area_ha
     
     # Calcular volume total na área de supressão (st)
     volume_total_suprimido_st = total_volume_st_ha * total_area_ha
     
     # Calcular volume total na área de supressão (mdc) - assumindo fator de conversão padrão
-    # Geralmente 1 m³ = 0.5 mdc (metros de carvão)
     volume_total_suprimido_mdc = volume_total_suprimido_m3 * 0.5
     
-    # Criar a tabela
+    # Criar a tabela com valores numéricos para evitar erro de serialização
     suppression_data = {
         'Local': ['Área de Intervenção', 'Total'],
         'Área (ha)': [total_area_ha, total_area_ha],
-        'Volume (m³/ha)': [total_volume_m3_ha / project_info['total_sampled_area'], '-'],
-        'Volume Total a Ser Suprimido (m³)': [f"{volume_total_suprimido_m3:.2f}", f"{volume_total_suprimido_m3:.2f}"],
-        'Volume Total a Ser Suprimido (st)': [f"{volume_total_suprimido_st:.2f}", f"{volume_total_suprimido_st:.2f}"],
-        'Volume Total a Ser Suprimido (mdc)': [f"{volume_total_suprimido_mdc:.2f}", f"{volume_total_suprimido_mdc:.2f}"]
+        'Volume (m³/ha)': [total_volume_m3_ha, None],  # Usar None em vez de '-' para evitar erro
+        'Volume Total a Ser Suprimido (m³)': [volume_total_suprimido_m3, volume_total_suprimido_m3],
+        'Volume Total a Ser Suprimido (st)': [volume_total_suprimido_st, volume_total_suprimido_st],
+        'Volume Total a Ser Suprimido (mdc)': [volume_total_suprimido_mdc, volume_total_suprimido_mdc]
     }
     
     suppression_table = pd.DataFrame(suppression_data)
@@ -506,7 +505,15 @@ def processing_tab():
     suppression_table = calculate_suppression_volume_table(results_df, project_info)
     
     if not suppression_table.empty:
-        st.dataframe(suppression_table, use_container_width=True, hide_index=True)
+        # Formatar a tabela para exibição
+        formatted_table = suppression_table.style.format({
+            'Área (ha)': '{:.0f}',
+            'Volume (m³/ha)': lambda x: '{:.2f}'.format(x) if pd.notna(x) else '-',
+            'Volume Total a Ser Suprimido (m³)': '{:.2f}',
+            'Volume Total a Ser Suprimido (st)': '{:.2f}',
+            'Volume Total a Ser Suprimido (mdc)': '{:.2f}'
+        })
+        st.dataframe(formatted_table, use_container_width=True, hide_index=True)
     else:
         st.warning("Não foi possível calcular o volume de supressão.")
 

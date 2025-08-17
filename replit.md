@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Suppression Volume Table**: Added new table showing volume calculations for vegetation suppression at the project site
 - **Interface Cleanup**: Removed "Resumo dos Cálculos" section from processing tab per user request
 - **SINAFLOR Table**: Added comprehensive SINAFLOR format results table to Statistics tab with all required parameters
+- **Plot Averages Table**: Added "Volume Médio por Parcela" table to Processing tab showing DAP, height, and volume averages by plot
 
 ## System Architecture
 

@@ -213,6 +213,55 @@ def create_sinaflor_table(results_df, statistics, project_info):
     sinaflor_table = pd.DataFrame(sinaflor_data)
     return sinaflor_table
 
+def calculate_plot_averages_table(results_df):
+    """
+    Calcula médias por parcela para DAP, altura e volume.
+    
+    Args:
+        results_df (pandas.DataFrame): Dados processados com informações de parcela
+        
+    Returns:
+        pandas.DataFrame: Tabela com médias por parcela
+    """
+    # Verificar se existe coluna de parcela
+    plot_columns = [col for col in results_df.columns if any(term in col.lower() for term in ['parcela', 'plot', 'quadrat'])]
+    
+    if not plot_columns:
+        # Se não há coluna de parcela, criar uma baseada no índice ou assumir parcela única
+        results_df_copy = results_df.copy()
+        results_df_copy['Parcela'] = 1
+        plot_col = 'Parcela'
+    else:
+        results_df_copy = results_df.copy()
+        plot_col = plot_columns[0]
+    
+    # Agrupar por parcela e calcular médias
+    plot_stats = results_df_copy.groupby(plot_col).agg({
+        'DAP (cm)': 'mean',
+        'HT (m)': 'mean', 
+        'VT (m³)': 'mean'
+    }).reset_index()
+    
+    # Renomear colunas
+    plot_stats.columns = ['Parcela', 'DAP médio', 'HT média', 'VT (m³)']
+    
+    # Formatar valores
+    plot_stats['DAP médio'] = plot_stats['DAP médio'].round(2)
+    plot_stats['HT média'] = plot_stats['HT média'].round(2)
+    plot_stats['VT (m³)'] = plot_stats['VT (m³)'].round(2)
+    
+    # Adicionar linha de total
+    total_row = pd.DataFrame({
+        'Parcela': ['Total'],
+        'DAP médio': [''],
+        'HT média': [''],
+        'VT (m³)': [plot_stats['VT (m³)'].sum().round(2)]
+    })
+    
+    plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
+    
+    return plot_averages_table
+
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
     df_original = df.copy()
@@ -536,6 +585,22 @@ def processing_tab():
             'VT (st/ha)': '{:.4f}'
         }),
         use_container_width=True
+    )
+    
+    # Volume médio por parcela
+    st.subheader("Volume Médio por Parcela")
+    plot_averages_table = calculate_plot_averages_table(results_df)
+    
+    st.dataframe(
+        plot_averages_table,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Parcela": st.column_config.TextColumn("Parcela", width="small"),
+            "DAP médio": st.column_config.NumberColumn("DAP médio", format="%.2f"),
+            "HT média": st.column_config.NumberColumn("HT média", format="%.2f"),
+            "VT (m³)": st.column_config.NumberColumn("VT (m³)", format="%.2f")
+        }
     )
     
     # Tabela de quantidade de espécies

@@ -100,6 +100,48 @@ def calculate_species_count_table(results_df):
     
     return species_count
 
+def calculate_suppression_volume_table(results_df, project_info):
+    """
+    Cria a tabela de Volume de supressão da vegetação no local do empreendimento.
+    
+    Args:
+        results_df (pandas.DataFrame): Dados processados com cálculos
+        project_info (dict): Informações do projeto com dados de área
+        
+    Returns:
+        pandas.DataFrame: Tabela de volume de supressão
+    """
+    # Calcular totais
+    total_area_ha = project_info['total_area']
+    total_volume_m3 = results_df['VT (m³)'].sum()
+    total_volume_m3_ha = results_df['VT (m³/ha)'].sum()
+    total_volume_st_ha = results_df['VT (st/ha)'].sum()
+    
+    # Calcular volume total na área de supressão (m³)
+    # Volume por hectare multiplicado pela área total
+    volume_total_suprimido_m3 = total_volume_m3_ha * total_area_ha
+    
+    # Calcular volume total na área de supressão (st)
+    volume_total_suprimido_st = total_volume_st_ha * total_area_ha
+    
+    # Calcular volume total na área de supressão (mdc) - assumindo fator de conversão padrão
+    # Geralmente 1 m³ = 0.5 mdc (metros de carvão)
+    volume_total_suprimido_mdc = volume_total_suprimido_m3 * 0.5
+    
+    # Criar a tabela
+    suppression_data = {
+        'Local': ['Área de Intervenção', 'Total'],
+        'Área (ha)': [total_area_ha, total_area_ha],
+        'Volume (m³/ha)': [total_volume_m3_ha / project_info['total_sampled_area'], '-'],
+        'Volume Total a Ser Suprimido (m³)': [f"{volume_total_suprimido_m3:.2f}", f"{volume_total_suprimido_m3:.2f}"],
+        'Volume Total a Ser Suprimido (st)': [f"{volume_total_suprimido_st:.2f}", f"{volume_total_suprimido_st:.2f}"],
+        'Volume Total a Ser Suprimido (mdc)': [f"{volume_total_suprimido_mdc:.2f}", f"{volume_total_suprimido_mdc:.2f}"]
+    }
+    
+    suppression_table = pd.DataFrame(suppression_data)
+    
+    return suppression_table
+
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
     df_original = df.copy()
@@ -458,6 +500,15 @@ def processing_tab():
             st.metric("Total de Árvores", species_count_table['Quantidade Encontrada'].sum())
     else:
         st.warning("Não foi possível identificar a coluna de espécies nos dados.")
+
+    # Volume de supressão da vegetação
+    st.subheader("Volume de Supressão da Vegetação no Local do Empreendimento")
+    suppression_table = calculate_suppression_volume_table(results_df, project_info)
+    
+    if not suppression_table.empty:
+        st.dataframe(suppression_table, use_container_width=True, hide_index=True)
+    else:
+        st.warning("Não foi possível calcular o volume de supressão.")
 
     # Volume médio por espécie
     st.subheader("Volume Médio por Espécie")

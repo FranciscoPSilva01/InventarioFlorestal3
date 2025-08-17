@@ -30,6 +30,7 @@ def calculate_species_volume_summary(results_df, project_info):
     
     # Calcular métricas por espécie
     plot_area_ha = project_info['plot_area']
+    total_sampled_area_ha = project_info['total_sampled_area']
     total_area_ha = project_info['total_area']
     
     species_groups = results_df.groupby(species_column).agg({
@@ -50,8 +51,9 @@ def calculate_species_volume_summary(results_df, project_info):
     ]
     
     # Calcular n/ha usando a fórmula correta: (quantidade Encontrada / Área Total Amostrada) * 10000
-    # Nota: plot_area_ha é a área total amostrada em hectares
-    species_groups['n/ha'] = (species_groups['n_trees_plot'] / plot_area_ha) * 10000
+    # Nota: total_sampled_area_ha é a área total amostrada em hectares (todas as parcelas)
+    # Se total_sampled_area_ha já está em hectares, não precisamos multiplicar por 10000
+    species_groups['n/ha'] = species_groups['n_trees_plot'] / total_sampled_area_ha
     
     # Calcular n total (extrapolação para área total)
     species_groups['n total'] = species_groups['n/ha'] * total_area_ha

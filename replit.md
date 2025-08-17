@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
 - **Species Count Table**: Added new table showing quantity of each species found in the forest inventory data
 - **Suppression Volume Table**: Added new table showing volume calculations for vegetation suppression at the project site
 - **Interface Cleanup**: Removed "Resumo dos Cálculos" section from processing tab per user request
+- **SINAFLOR Table**: Added comprehensive SINAFLOR format results table to Statistics tab with all required parameters
 
 ## System Architecture
 

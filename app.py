@@ -142,6 +142,77 @@ def calculate_suppression_volume_table(results_df, project_info):
     
     return suppression_table
 
+def create_sinaflor_table(results_df, statistics, project_info):
+    """
+    Cria a tabela no formato SINAFLOR com resultados do inventário.
+    
+    Args:
+        results_df (pandas.DataFrame): Dados processados
+        statistics (dict): Estatísticas calculadas
+        project_info (dict): Informações do projeto
+        
+    Returns:
+        pandas.DataFrame: Tabela formato SINAFLOR
+    """
+    # Calcular valores necessários
+    total_volume = results_df['VT (m³)'].sum()
+    mean_volume_per_tree = results_df['VT (m³)'].mean()
+    mean_volume_per_ha = statistics['mean']
+    variance_relative = (statistics['variance'] / mean_volume_per_ha) * 100 if mean_volume_per_ha > 0 else 0
+    confidence_interval_lower = statistics['ci_lower']
+    confidence_interval_upper = statistics['ci_upper']
+    ic_per_ha_lower = confidence_interval_lower
+    ic_per_ha_upper = confidence_interval_upper
+    
+    # Criar dados da tabela SINAFLOR
+    sinaflor_data = {
+        'Parâmetro': [
+            'Equação do volume',
+            'Processo de Amostragem', 
+            'Tipo de inventário',
+            'Nível de probabilidade (%)',
+            'Forma da parcela',
+            'Área total do projeto (ha)',
+            'Área amostrada (ha)',
+            'Volume (m³)',
+            'Média (m³)',
+            'Média por hectare (m³/ha)',
+            'Desvio padrão',
+            'Variância da média',
+            'Erro de Amostragem %',
+            'Erro padrão',
+            'Coeficiente de variação',
+            'População',
+            'Variância da média relativa',
+            'Intervalo de confiança (m³)',
+            'IC para a Média por ha ( 90 %)'
+        ],
+        'Valor': [
+            '0,000094*DAP^1,830398*HT^0,960913',
+            'Amostragem Aleatória Simples',
+            'Detalhado',
+            '90',
+            'Retangular',
+            f"{project_info['total_area']:.2f}",
+            f"{project_info['total_sampled_area']:.5f}",
+            f"{total_volume:.5f}",
+            f"{mean_volume_per_tree:.5f}",
+            f"{mean_volume_per_ha:.5f}",
+            f"{statistics['std_dev']:.5f}",
+            f"{statistics['variance']:.5f}",
+            f"{statistics['sampling_error']:.5f}",
+            f"{statistics['standard_error']:.5f}",
+            f"{statistics['cv']:.5f}",
+            'Finita',
+            f"{variance_relative:.5f}",
+            f"{confidence_interval_lower:.6f}<X<{confidence_interval_upper:.6f}",
+            f"{ic_per_ha_lower:.6f}<X<{ic_per_ha_upper:.6f}"
+        ]
+    }
+    
+    sinaflor_table = pd.DataFrame(sinaflor_data)
+    return sinaflor_table
+
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
     df_original = df.copy()
@@ -566,6 +637,22 @@ def statistics_tab():
     with col3:
         volume_upper = statistics['ci_upper'] * project_info['total_area']
         st.metric("Volume Máximo IC 90% (m³)", f"{volume_upper:.2f}")
+    
+    # Tabela formato SINAFLOR
+    st.subheader("Resultados Formato SINAFLOR")
+    results_df = st.session_state.results_df
+    sinaflor_table = create_sinaflor_table(results_df, statistics, project_info)
+    
+    # Exibir tabela com formatação especial
+    st.dataframe(
+        sinaflor_table,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Parâmetro": st.column_config.TextColumn("Parâmetro", width="medium"),
+            "Valor": st.column_config.TextColumn("Valor", width="large")
+        }
+    )
 
 def report_tab():
     st.header("📑 Relatório Final")

@@ -68,6 +68,36 @@ def calculate_species_volume_summary(results_df, project_info):
     
     return species_groups[final_columns].sort_values('VT (m³)/ha', ascending=False)
 
+def calculate_species_count_table(results_df):
+    """
+    Cria uma tabela simples com a quantidade de cada espécie encontrada.
+    
+    Args:
+        results_df (pandas.DataFrame): Dados processados com cálculos
+        
+    Returns:
+        pandas.DataFrame: Tabela com contagem de espécies
+    """
+    # Identificar coluna de espécie
+    species_column = None
+    for col in results_df.columns:
+        col_upper = str(col).upper()
+        if any(keyword in col_upper for keyword in ['NOME COMUM', 'ESPÉCIE', 'SPECIES', 'NOME CIENTÍFICO']):
+            species_column = col
+            break
+    
+    if not species_column or results_df[species_column].isna().all():
+        return pd.DataFrame()  # Retorna DataFrame vazio se não encontrar coluna de espécie
+    
+    # Contar quantidade de cada espécie
+    species_count = results_df[species_column].value_counts().reset_index()
+    species_count.columns = ['Espécie', 'Quantidade Encontrada']
+    
+    # Ordenar por quantidade (maior para menor)
+    species_count = species_count.sort_values('Quantidade Encontrada', ascending=False)
+    
+    return species_count
+
 def detect_and_map_columns(df):
     """Detecta e mapeia automaticamente as colunas da planilha"""
     df_original = df.copy()
@@ -412,6 +442,20 @@ def processing_tab():
     with col4:
         st.metric("DAP Médio (cm)", f"{results_df['DAP (cm)'].mean():.4f}")
         st.metric("Altura Média (m)", f"{results_df['HT (m)'].mean():.2f}")
+
+    # Tabela de quantidade de espécies
+    st.subheader("Quantidade de Cada Espécie Encontrada")
+    species_count_table = calculate_species_count_table(results_df)
+    
+    if not species_count_table.empty:
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.dataframe(species_count_table, use_container_width=True)
+        with col2:
+            st.metric("Total de Espécies", len(species_count_table))
+            st.metric("Total de Árvores", species_count_table['Quantidade Encontrada'].sum())
+    else:
+        st.warning("Não foi possível identificar a coluna de espécies nos dados.")
 
     # Volume médio por espécie
     st.subheader("Volume Médio por Espécie")

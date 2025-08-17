@@ -15,7 +15,6 @@ Preferred communication style: Simple, everyday language.
 - **Configuration Added**: Created `.streamlit/config.toml` with proper server settings for deployment
 - **Formula Fix**: Updated n/ha calculation in species volume table to use correct formula: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 10000
 - **Species Count Table**: Added new table showing quantity of each species found in the forest inventory data
-- **Formula Fix**: Updated n/ha calculation in species volume table to use correct formula: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 1 ha
 
 ## System Architecture
 

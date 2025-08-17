@@ -215,11 +215,12 @@ def create_sinaflor_table(results_df, statistics, project_info):
 
 def calculate_plot_averages_table(results_df, project_info):
     """
-    Calcula médias por parcela. Cada parcela tem as mesmas espécies com os mesmos valores médios,
-    mas o volume total é dividido entre as parcelas.
-    DAP médio = média geral do DAP de todas as espécies (igual para todas as parcelas)
-    HT média = média geral da altura de todas as espécies (igual para todas as parcelas)
-    VT (m³) = volume total dividido pelo número de parcelas
+    Calcula médias por parcela distribuindo as árvores entre as parcelas.
+    Para cada parcela:
+    - Identifica quantas árvores tem na parcela
+    - DAP médio = soma dos DAPs das árvores da parcela ÷ quantidade de árvores da parcela
+    - HT média = soma das alturas das árvores da parcela ÷ quantidade de árvores da parcela  
+    - VT (m³) = soma dos volumes das árvores da parcela
     
     Args:
         results_df (pandas.DataFrame): Dados processados
@@ -229,31 +230,56 @@ def calculate_plot_averages_table(results_df, project_info):
         pandas.DataFrame: Tabela com médias por parcela
     """
     num_plots = project_info['num_plots']
+    total_trees = len(results_df)
     
-    # Calcular médias gerais (iguais para todas as parcelas)
-    dap_medio_geral = results_df['DAP (cm)'].mean()
-    ht_media_geral = results_df['HT (m)'].mean()
-    
-    # Volume total dividido pelo número de parcelas
-    volume_total_geral = results_df['VT (m³)'].sum()
-    volume_por_parcela = volume_total_geral / num_plots
+    # Distribuir árvores uniformemente entre as parcelas
+    trees_per_plot = total_trees // num_plots
+    remaining_trees = total_trees % num_plots
     
     plot_data = []
+    start_idx = 0
     
     for plot_num in range(1, num_plots + 1):
-        plot_data.append({
-            'Parcela': str(plot_num),
-            'DAP médio': round(dap_medio_geral, 4),  # Mesmo para todas as parcelas
-            'HT média': round(ht_media_geral, 2),    # Mesmo para todas as parcelas
-            'VT (m³)': round(volume_por_parcela, 2)  # Volume dividido entre parcelas
-        })
+        # Determinar quantas árvores para esta parcela
+        if plot_num <= remaining_trees:
+            trees_in_this_plot = trees_per_plot + 1
+        else:
+            trees_in_this_plot = trees_per_plot
+            
+        end_idx = start_idx + trees_in_this_plot
+        
+        # Selecionar árvores desta parcela
+        plot_trees = results_df.iloc[start_idx:end_idx]
+        
+        if len(plot_trees) > 0:
+            # Calcular para esta parcela específica
+            # DAP médio = soma dos DAPs das árvores ÷ quantidade de árvores
+            dap_sum = plot_trees['DAP (cm)'].sum()
+            num_trees_in_plot = len(plot_trees)
+            dap_medio = dap_sum / num_trees_in_plot
+            
+            # HT média = soma das alturas das árvores ÷ quantidade de árvores
+            ht_sum = plot_trees['HT (m)'].sum()
+            ht_media = ht_sum / num_trees_in_plot
+            
+            # VT = soma dos volumes das árvores da parcela
+            vt_total = plot_trees['VT (m³)'].sum()
+            
+            plot_data.append({
+                'Parcela': str(plot_num),
+                'DAP médio': round(dap_medio, 4),
+                'HT média': round(ht_media, 2), 
+                'VT (m³)': round(vt_total, 2)
+            })
+        
+        start_idx = end_idx
     
     # Criar DataFrame
     plot_stats = pd.DataFrame(plot_data)
     
     # Adicionar linha de total
     if not plot_stats.empty:
-        total_volume = volume_total_geral
+        total_volume = plot_stats['VT (m³)'].sum()
         total_row = pd.DataFrame({
             'Parcela': ['Total'],
             'DAP médio': [None],

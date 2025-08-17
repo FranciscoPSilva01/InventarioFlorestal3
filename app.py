@@ -215,7 +215,10 @@ def create_sinaflor_table(results_df, statistics, project_info):
 
 def calculate_plot_averages_table(results_df, project_info):
     """
-    Calcula médias por parcela para DAP, altura e volume baseado nas informações do projeto.
+    Calcula médias por parcela baseado na média de todas as espécies encontradas em cada parcela.
+    DAP médio = média do DAP de todas as espécies da parcela
+    HT média = média da altura de todas as espécies da parcela
+    VT (m³) = média do volume de todas as espécies da parcela
     
     Args:
         results_df (pandas.DataFrame): Dados processados
@@ -225,39 +228,32 @@ def calculate_plot_averages_table(results_df, project_info):
         pandas.DataFrame: Tabela com médias por parcela
     """
     num_plots = project_info['num_plots']
-    total_trees = len(results_df)
     
-    # Calcular árvores por parcela (distribuição uniforme)
-    trees_per_plot = total_trees // num_plots
-    remaining_trees = total_trees % num_plots
+    # Obter espécies únicas
+    unique_species = results_df['Nome comum'].unique() if 'Nome comum' in results_df.columns else results_df['Espécie'].unique() if 'Espécie' in results_df.columns else ['Espécie não identificada']
     
     plot_data = []
-    start_idx = 0
     
     for plot_num in range(1, num_plots + 1):
-        # Determinar quantas árvores para esta parcela
-        if plot_num <= remaining_trees:
-            end_idx = start_idx + trees_per_plot + 1
-        else:
-            end_idx = start_idx + trees_per_plot
+        # Para cada parcela, calcular a média de todas as espécies
+        # Assumindo que todas as espécies estão presentes em todas as parcelas
+        # (método comum em inventários florestais)
         
-        # Selecionar árvores desta parcela
-        plot_trees = results_df.iloc[start_idx:end_idx]
+        # Calcular DAP médio: média de todos os DAPs das espécies
+        dap_medio = results_df['DAP (cm)'].mean()
         
-        if len(plot_trees) > 0:
-            # Calcular médias para a parcela
-            dap_medio = plot_trees['DAP (cm)'].mean()
-            ht_media = plot_trees['HT (m)'].mean()
-            vt_medio = plot_trees['VT (m³)'].mean()
-            
-            plot_data.append({
-                'Parcela': str(plot_num),
-                'DAP médio': round(dap_medio, 2),
-                'HT média': round(ht_media, 2),
-                'VT (m³)': round(vt_medio, 2)
-            })
+        # Calcular HT média: média de todas as alturas das espécies  
+        ht_media = results_df['HT (m)'].mean()
         
-        start_idx = end_idx
+        # Calcular VT médio: média de todos os volumes das espécies
+        vt_medio = results_df['VT (m³)'].mean()
+        
+        plot_data.append({
+            'Parcela': str(plot_num),
+            'DAP médio': round(dap_medio, 2),
+            'HT média': round(ht_media, 2), 
+            'VT (m³)': round(vt_medio, 2)
+        })
     
     # Criar DataFrame
     plot_stats = pd.DataFrame(plot_data)

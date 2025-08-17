@@ -8,6 +8,13 @@ This is a forest inventory analysis system built with Streamlit that processes f
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **Migration Completed (August 17, 2025)**: Successfully migrated project from Replit Agent to standard Replit environment
+- **Dependencies Installed**: Added Streamlit and all required packages for forest inventory analysis
+- **Configuration Added**: Created `.streamlit/config.toml` with proper server settings for deployment
+- **Formula Fix**: Updated n/ha calculation in species volume table to use correct formula: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 1 ha
+
 ## System Architecture
 
 ### Frontend Architecture

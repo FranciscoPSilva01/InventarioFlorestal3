@@ -49,8 +49,9 @@ def calculate_species_volume_summary(results_df, project_info):
         'VT (m³)/ha'
     ]
     
-    # Calcular n/ha (árvores por hectare na parcela)
-    species_groups['n/ha'] = species_groups['n_trees_plot'] / plot_area_ha
+    # Calcular n/ha usando a fórmula correta: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 1 ha
+    # Nota: plot_area_ha é a área total amostrada em hectares
+    species_groups['n/ha'] = (species_groups['n_trees_plot'] / plot_area_ha) * 1
     
     # Calcular n total (extrapolação para área total)
     species_groups['n total'] = species_groups['n/ha'] * total_area_ha

@@ -118,10 +118,10 @@ def calculate_suppression_volume_table(results_df, project_info):
     total_volume_m3_ha = results_df['VT (m³/ha)'].sum()
     total_volume_st_ha = results_df['VT (st/ha)'].sum()
     
-    # Calcular volume total na área de supressão (m³)
+    # Volume Total a Ser Suprimido (m³) = Volume (m³/ha) × Área (ha)
     volume_total_suprimido_m3 = total_volume_m3_ha * total_area_ha
     
-    # Calcular volume total na área de supressão (st)
+    # Volume Total a Ser Suprimido (st) = Volume (st/ha) × Área (ha)
     volume_total_suprimido_st = total_volume_st_ha * total_area_ha
     
     # Calcular volume total na área de supressão (mdc) - assumindo fator de conversão padrão

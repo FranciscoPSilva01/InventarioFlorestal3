@@ -16,6 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Formula Fix**: Updated n/ha calculation in species volume table to use correct formula: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 10000
 - **Species Count Table**: Added new table showing quantity of each species found in the forest inventory data
 - **Suppression Volume Table**: Added new table showing volume calculations for vegetation suppression at the project site
+- **Interface Cleanup**: Removed "Resumo dos Cálculos" section from processing tab per user request
 
 ## System Architecture
 

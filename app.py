@@ -467,26 +467,6 @@ def processing_tab():
         use_container_width=True
     )
     
-    # Summary statistics
-    st.subheader("Resumo dos Cálculos")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Total de Árvores", len(results_df))
-        st.metric("Volume Total (m³)", f"{results_df['VT (m³)'].sum():.4f}")
-    
-    with col2:
-        st.metric("Volume Médio (m³/ha)", f"{results_df['VT (m³/ha)'].mean():.4f}")
-        st.metric("Volume Total (m³/ha)", f"{results_df['VT (m³/ha)'].sum():.4f}")
-    
-    with col3:
-        st.metric("Volume Médio (st/ha)", f"{results_df['VT (st/ha)'].mean():.4f}")
-        st.metric("Volume Total (st/ha)", f"{results_df['VT (st/ha)'].sum():.4f}")
-    
-    with col4:
-        st.metric("DAP Médio (cm)", f"{results_df['DAP (cm)'].mean():.4f}")
-        st.metric("Altura Média (m)", f"{results_df['HT (m)'].mean():.2f}")
-
     # Tabela de quantidade de espécies
     st.subheader("Quantidade de Cada Espécie Encontrada")
     species_count_table = calculate_species_count_table(results_df)

@@ -114,7 +114,8 @@ def calculate_suppression_volume_table(results_df, project_info):
     # Calcular totais
     total_area_ha = project_info['total_area']
     
-    # Volume (m³/ha) deve ser o somatório de todos os valores da coluna VT(m³)/ha da tabela Volume Médio por Espécie
+    # Volume (m³/ha) deve ser o somatório de todos os valores da coluna VT(m³)/ha (Volume Total m³/ha)
+    # Este valor deve coincidir com o "Volume Total (m³/ha)" do Resumo dos Cálculos
     total_volume_m3_ha = results_df['VT (m³/ha)'].sum()
     total_volume_st_ha = results_df['VT (st/ha)'].sum()
     

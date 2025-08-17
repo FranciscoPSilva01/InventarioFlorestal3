@@ -251,13 +251,14 @@ def calculate_plot_averages_table(results_df, project_info):
             # Calcular médias das árvores desta parcela específica
             dap_medio = plot_trees['DAP (cm)'].mean()
             ht_media = plot_trees['HT (m)'].mean()
-            vt_medio = plot_trees['VT (m³)'].mean()
+            # VT deve ser a somatória, não média
+            vt_total = plot_trees['VT (m³)'].sum()
             
             plot_data.append({
                 'Parcela': str(plot_num),
                 'DAP médio': round(dap_medio, 4),  # Mantendo 4 casas decimais para precisão
                 'HT média': round(ht_media, 2), 
-                'VT (m³)': round(vt_medio, 2)
+                'VT (m³)': round(vt_total, 2)
             })
         
         start_idx = end_idx

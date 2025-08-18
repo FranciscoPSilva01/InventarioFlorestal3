@@ -154,18 +154,28 @@ def create_sinaflor_table(results_df, statistics, project_info):
     Returns:
         pandas.DataFrame: Tabela formato SINAFLOR
     """
-    # Calcular valores necessários
-    total_volume = results_df['VT (m³)'].sum()
-    mean_volume_per_tree = results_df['VT (m³)'].mean()
-    mean_volume_per_ha = results_df['VT (m³/ha)'].sum()  # Soma de todas as espécies
+    # Calcular valores necessários baseados na amostragem por parcela
+    num_plots = project_info['num_plots']
+    total_sampled_area = project_info['total_sampled_area'] 
     
-    # Calcular variância da média relativa corretamente
-    # Variância da média relativa = (variância / média²) * 100
+    # Volume total amostrado (soma de todos os volumes individuais das árvores)
+    total_volume = results_df['VT (m³)'].sum()
+    
+    # Média por árvore individual (volume médio de cada árvore)
+    mean_volume_per_tree = results_df['VT (m³)'].mean()
+    
+    # Volume médio por hectare (baseado na média das parcelas, não soma)
+    # Para inventário florestal, deve ser média das parcelas, não soma total
+    mean_volume_per_ha = statistics['mean']  # Esta é a média correta das parcelas
+    
+    # Variância da média relativa = (variância da amostra / média²) * 100
     variance_relative = (statistics['variance'] / (statistics['mean'] ** 2)) * 100 if statistics['mean'] > 0 else 0
     
-    # Intervalos de confiança - já estão em m³/ha
+    # Intervalos de confiança já calculados nas estatísticas
     confidence_interval_lower = statistics['ci_lower']
     confidence_interval_upper = statistics['ci_upper']
+    
+    # IC para média por hectare (mesmo que o IC normal, pois estatísticas já são por ha)
     ic_per_ha_lower = confidence_interval_lower
     ic_per_ha_upper = confidence_interval_upper
     
@@ -199,10 +209,10 @@ def create_sinaflor_table(results_df, statistics, project_info):
             '90',
             'Retangular',
             f"{project_info['total_area']:.2f}",
-            f"{project_info['total_sampled_area']:.5f}",
-            f"{total_volume:.5f}",
-            f"{mean_volume_per_tree:.5f}",
-            f"{mean_volume_per_ha:.5f}",
+            f"{project_info['total_sampled_area']:.6f}",
+            f"{total_volume:.6f}",
+            f"{mean_volume_per_tree:.6f}",
+            f"{mean_volume_per_ha:.6f}",
             f"{statistics['std_dev']:.5f}",
             f"{statistics['variance']:.5f}",
             f"{statistics['sampling_error']:.5f}",

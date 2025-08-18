@@ -19,14 +19,43 @@ class StatisticsAnalyzer:
         Returns:
             dict: Dictionary containing all statistical measures
         """
-        # Use volume per hectare for statistical analysis
-        volume_data = results_df['VT (m³/ha)']
+        # Para análise estatística correta em inventário florestal, precisamos agrupar por parcela
+        # e calcular estatísticas baseadas na média por parcela, não por árvore individual
+        
+        # Identificar coluna UA/Parcela
+        ua_column = None
+        for col in results_df.columns:
+            if 'UA' in str(col).upper() or 'PARCELA' in str(col).upper() or 'UNIDADE' in str(col).upper():
+                ua_column = col
+                break
+        
+        if ua_column is not None:
+            # Calcular volume por hectare médio para cada parcela
+            plot_volumes = results_df.groupby(ua_column)['VT (m³/ha)'].sum()
+            volume_data = plot_volumes
+        else:
+            # Fallback: usar distribuição por parcelas
+            num_plots = project_info['num_plots'] 
+            total_trees = len(results_df)
+            trees_per_plot = total_trees // num_plots
+            
+            plot_volumes = []
+            for i in range(num_plots):
+                start_idx = i * trees_per_plot
+                end_idx = start_idx + trees_per_plot
+                if i == num_plots - 1:  # Última parcela pega o resto
+                    end_idx = total_trees
+                plot_volume = results_df.iloc[start_idx:end_idx]['VT (m³/ha)'].sum()
+                plot_volumes.append(plot_volume)
+            
+            volume_data = pd.Series(plot_volumes)
+        
         n = len(volume_data)
         
-        # Basic descriptive statistics
-        mean = volume_data.mean()
-        variance = volume_data.var(ddof=1)  # Sample variance
-        std_dev = volume_data.std(ddof=1)   # Sample standard deviation
+        # Basic descriptive statistics usando float() para garantir tipos corretos
+        mean = float(volume_data.mean())
+        variance = float(volume_data.var(ddof=1))  # Sample variance
+        std_dev = float(volume_data.std(ddof=1))   # Sample standard deviation
         
         # Coefficient of variation
         cv = (std_dev / mean) * 100 if mean != 0 else 0
@@ -46,10 +75,10 @@ class StatisticsAnalyzer:
         # Sampling error (as percentage of the mean)
         sampling_error = (margin_of_error / mean) * 100 if mean != 0 else 0
         
-        # Additional statistics
-        minimum = volume_data.min()
-        maximum = volume_data.max()
-        median = volume_data.median()
+        # Additional statistics - convertendo para float
+        minimum = float(volume_data.min())
+        maximum = float(volume_data.max())
+        median = float(volume_data.median())
         
         # Calculate expansion factors
         plot_area = project_info['plot_area']
@@ -69,7 +98,7 @@ class StatisticsAnalyzer:
             'minimum': round(minimum, 4),
             'maximum': round(maximum, 4),
             'median': round(median, 4),
-            't_critical': round(t_critical, 4),
+            't_critical': round(float(t_critical), 4),
             'margin_of_error': round(margin_of_error, 4),
             'expansion_factor': round(expansion_factor, 4),
             'confidence_level': confidence_level

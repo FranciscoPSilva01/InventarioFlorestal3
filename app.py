@@ -220,19 +220,82 @@ def create_sinaflor_table(results_df, statistics, project_info):
 
 def calculate_plot_averages_table(results_df, project_info):
     """
-    Calcula médias por parcela distribuindo as árvores entre as parcelas.
-    Para cada parcela:
-    - Identifica quantas árvores tem na parcela
-    - DAP médio = soma dos DAPs das árvores da parcela ÷ quantidade de árvores da parcela
-    - HT média = soma das alturas das árvores da parcela ÷ quantidade de árvores da parcela  
-    - VT (m³) = soma dos volumes das árvores da parcela
+    Calcula médias por parcela usando os dados reais da tabela "Cálculos por Árvore".
+    Usa as colunas UA (Unidade Amostral), N° (número da árvore) e DAP (cm) para calcular:
+    - DAP médio = soma dos DAPs das árvores da UA ÷ quantidade de árvores da UA
+    - HT média = soma das alturas das árvores da UA ÷ quantidade de árvores da UA  
+    - VT (m³) = soma dos volumes das árvores da UA
     
     Args:
-        results_df (pandas.DataFrame): Dados processados
-        project_info (dict): Informações do projeto incluindo número de parcelas
+        results_df (pandas.DataFrame): Dados processados com colunas UA, N°, DAP (cm), etc.
+        project_info (dict): Informações do projeto
         
     Returns:
-        pandas.DataFrame: Tabela com médias por parcela
+        pandas.DataFrame: Tabela com médias por parcela baseadas nos dados reais
+    """
+    
+    # Identificar a coluna UA (Unidade Amostral/Parcela)
+    ua_column = None
+    for col in results_df.columns:
+        if 'UA' in str(col).upper() or 'PARCELA' in str(col).upper() or 'UNIDADE' in str(col).upper():
+            ua_column = col
+            break
+    
+    if ua_column is None:
+        # Se não encontrar coluna UA, usar distribuição uniforme como fallback
+        return calculate_plot_averages_fallback(results_df, project_info)
+    
+    # Agrupar dados por UA (Unidade Amostral)
+    plot_groups = results_df.groupby(ua_column)
+    plot_data = []
+    
+    for ua_name, ua_trees in plot_groups:
+        if len(ua_trees) > 0:
+            num_trees_in_ua = len(ua_trees)
+            
+            # DAP médio = soma de todos os DAPs desta UA ÷ quantidade de árvores desta UA
+            dap_values = ua_trees['DAP (cm)'].values
+            dap_sum = sum(dap_values)
+            dap_medio = dap_sum / num_trees_in_ua
+            
+            # HT média = soma das alturas desta UA ÷ quantidade de árvores desta UA
+            ht_values = ua_trees['HT (m)'].values
+            ht_sum = sum(ht_values)
+            ht_media = ht_sum / num_trees_in_ua
+            
+            # VT = soma dos volumes das árvores desta UA
+            vt_total = ua_trees['VT (m³)'].sum()
+            
+            plot_data.append({
+                'Parcela': str(ua_name),
+                'DAP médio': round(dap_medio, 4),
+                'HT média': round(ht_media, 2), 
+                'VT (m³)': round(vt_total, 2)
+            })
+    
+    # Criar DataFrame
+    plot_stats = pd.DataFrame(plot_data)
+    
+    # Adicionar linha de total
+    if not plot_stats.empty:
+        total_volume = plot_stats['VT (m³)'].sum()
+        # Criar linha de total com tipos consistentes
+        total_row = pd.DataFrame({
+            'Parcela': ['Total'],
+            'DAP médio': [float('nan')],  
+            'HT média': [float('nan')],   
+            'VT (m³)': [round(total_volume, 2)]
+        })
+        
+        plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
+    else:
+        plot_averages_table = plot_stats
+    
+    return plot_averages_table
+
+def calculate_plot_averages_fallback(results_df, project_info):
+    """
+    Função fallback para quando não encontrar coluna UA
     """
     num_plots = project_info['num_plots']
     total_trees = len(results_df)
@@ -261,18 +324,9 @@ def calculate_plot_averages_table(results_df, project_info):
             num_trees_in_plot = len(plot_trees)
             
             # DAP médio = soma de todos os DAPs das árvores desta parcela ÷ quantidade de árvores desta parcela
-            dap_values_list = []
-            for idx in range(len(plot_trees)):
-                dap_val = plot_trees.iloc[idx]['DAP (cm)']
-                dap_values_list.append(dap_val)
-            
-            # Somar todos os DAPs desta parcela
-            dap_sum_parcela = 0
-            for dap_val in dap_values_list:
-                dap_sum_parcela += dap_val
-            
-            # Calcular DAP médio: soma total ÷ quantidade de árvores
-            dap_medio = dap_sum_parcela / num_trees_in_plot
+            dap_values = plot_trees['DAP (cm)'].values
+            dap_sum = sum(dap_values)
+            dap_medio = dap_sum / num_trees_in_plot
             
             # HT média = soma das alturas das árvores da parcela ÷ quantidade de árvores da parcela
             ht_values = plot_trees['HT (m)'].values

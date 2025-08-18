@@ -158,7 +158,12 @@ def create_sinaflor_table(results_df, statistics, project_info):
     total_volume = results_df['VT (m³)'].sum()
     mean_volume_per_tree = results_df['VT (m³)'].mean()
     mean_volume_per_ha = results_df['VT (m³/ha)'].sum()  # Soma de todas as espécies
-    variance_relative = (statistics['variance'] / mean_volume_per_ha) * 100 if mean_volume_per_ha > 0 else 0
+    
+    # Calcular variância da média relativa corretamente
+    # Variância da média relativa = (variância / média²) * 100
+    variance_relative = (statistics['variance'] / (statistics['mean'] ** 2)) * 100 if statistics['mean'] > 0 else 0
+    
+    # Intervalos de confiança - já estão em m³/ha
     confidence_interval_lower = statistics['ci_lower']
     confidence_interval_upper = statistics['ci_upper']
     ic_per_ha_lower = confidence_interval_lower

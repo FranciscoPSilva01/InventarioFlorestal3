@@ -260,10 +260,19 @@ def calculate_plot_averages_table(results_df, project_info):
             # Calcular para esta parcela específica
             num_trees_in_plot = len(plot_trees)
             
-            # DAP médio = soma dos DAPs das árvores da parcela ÷ quantidade de árvores da parcela
-            dap_values = plot_trees['DAP (cm)'].values
-            dap_sum = sum(dap_values)
-            dap_medio = dap_sum / num_trees_in_plot
+            # DAP médio = soma de todos os DAPs das árvores desta parcela ÷ quantidade de árvores desta parcela
+            dap_values_list = []
+            for idx in range(len(plot_trees)):
+                dap_val = plot_trees.iloc[idx]['DAP (cm)']
+                dap_values_list.append(dap_val)
+            
+            # Somar todos os DAPs desta parcela
+            dap_sum_parcela = 0
+            for dap_val in dap_values_list:
+                dap_sum_parcela += dap_val
+            
+            # Calcular DAP médio: soma total ÷ quantidade de árvores
+            dap_medio = dap_sum_parcela / num_trees_in_plot
             
             # HT média = soma das alturas das árvores da parcela ÷ quantidade de árvores da parcela
             ht_values = plot_trees['HT (m)'].values

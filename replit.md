@@ -10,7 +10,8 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Migration Completed (August 17, 2025)**: Successfully migrated project from Replit Agent to standard Replit environment
+- **Migration Completed (August 18, 2025)**: Successfully migrated project from Replit Agent to standard Replit environment
+- **DAP Calculation Fix (August 18, 2025)**: Updated DAP average calculation in "Volume Médio por Parcela" table to properly sum all DAP values from each plot and divide by number of trees in that specific plot
 - **Dependencies Installed**: Added Streamlit and all required packages for forest inventory analysis
 - **Configuration Added**: Created `.streamlit/config.toml` with proper server settings for deployment
 - **Formula Fix**: Updated n/ha calculation in species volume table to use correct formula: (quantidade da espécie encontrada) ÷ (Área Total Amostrada) × 10000

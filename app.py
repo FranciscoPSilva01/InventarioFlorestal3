@@ -258,13 +258,16 @@ def calculate_plot_averages_table(results_df, project_info):
         
         if len(plot_trees) > 0:
             # Calcular para esta parcela específica
-            # DAP médio = soma dos DAPs das árvores ÷ quantidade de árvores
-            dap_sum = plot_trees['DAP (cm)'].sum()
             num_trees_in_plot = len(plot_trees)
+            
+            # DAP médio = soma dos DAPs das árvores da parcela ÷ quantidade de árvores da parcela
+            dap_values = plot_trees['DAP (cm)'].values
+            dap_sum = sum(dap_values)
             dap_medio = dap_sum / num_trees_in_plot
             
-            # HT média = soma das alturas das árvores ÷ quantidade de árvores
-            ht_sum = plot_trees['HT (m)'].sum()
+            # HT média = soma das alturas das árvores da parcela ÷ quantidade de árvores da parcela
+            ht_values = plot_trees['HT (m)'].values
+            ht_sum = sum(ht_values)
             ht_media = ht_sum / num_trees_in_plot
             
             # VT = soma dos volumes das árvores da parcela
@@ -285,18 +288,15 @@ def calculate_plot_averages_table(results_df, project_info):
     # Adicionar linha de total
     if not plot_stats.empty:
         total_volume = plot_stats['VT (m³)'].sum()
+        # Criar linha de total com tipos consistentes para evitar warning de concatenação
         total_row = pd.DataFrame({
             'Parcela': ['Total'],
-            'DAP médio': [None],
-            'HT média': [None],
+            'DAP médio': [float('nan')],  # Use nan em vez de None
+            'HT média': [float('nan')],   # Use nan em vez de None
             'VT (m³)': [round(total_volume, 2)]
         })
         
         plot_averages_table = pd.concat([plot_stats, total_row], ignore_index=True)
-        
-        # Converter colunas para object para permitir valores None na linha total
-        plot_averages_table['DAP médio'] = plot_averages_table['DAP médio'].astype('object')
-        plot_averages_table['HT média'] = plot_averages_table['HT média'].astype('object')
     else:
         plot_averages_table = plot_stats
     

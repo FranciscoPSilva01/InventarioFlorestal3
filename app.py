@@ -171,13 +171,18 @@ def create_sinaflor_table(results_df, statistics, project_info):
     # Variância da média relativa = (variância da amostra / média²) * 100
     variance_relative = (statistics['variance'] / (statistics['mean'] ** 2)) * 100 if statistics['mean'] > 0 else 0
     
-    # Intervalos de confiança já calculados nas estatísticas
+    # Intervalos de confiança baseados nas estatísticas das parcelas
     confidence_interval_lower = statistics['ci_lower']
     confidence_interval_upper = statistics['ci_upper']
     
-    # IC para média por hectare (mesmo que o IC normal, pois estatísticas já são por ha)
-    ic_per_ha_lower = confidence_interval_lower
-    ic_per_ha_upper = confidence_interval_upper
+    # Para IC por hectare, precisa ser consistente com a média por hectare
+    # Como mean_volume_per_ha é a soma de todos VT(m³/ha), o IC deve refletir
+    # a incerteza estatística dessa estimativa total
+    
+    # Calcular IC baseado na distribuição total por hectare
+    # O IC representa: soma_media ± margem_de_erro
+    ic_per_ha_lower = mean_volume_per_ha - statistics['margin_of_error']
+    ic_per_ha_upper = mean_volume_per_ha + statistics['margin_of_error']
     
     # Criar dados da tabela SINAFLOR
     sinaflor_data = {

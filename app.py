@@ -164,9 +164,9 @@ def create_sinaflor_table(results_df, statistics, project_info):
     # Média por árvore individual (volume médio de cada árvore)
     mean_volume_per_tree = results_df['VT (m³)'].mean()
     
-    # Volume médio por hectare (baseado na média das parcelas, não soma)
-    # Para inventário florestal, deve ser média das parcelas, não soma total
-    mean_volume_per_ha = statistics['mean']  # Esta é a média correta das parcelas
+    # Volume médio por hectare = somatória de VT (m³/ha) de todas as espécies
+    # Este é o volume total por hectare de todas as espécies encontradas
+    mean_volume_per_ha = results_df['VT (m³/ha)'].sum()
     
     # Variância da média relativa = (variância da amostra / média²) * 100
     variance_relative = (statistics['variance'] / (statistics['mean'] ** 2)) * 100 if statistics['mean'] > 0 else 0

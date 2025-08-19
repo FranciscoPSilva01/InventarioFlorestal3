@@ -224,6 +224,31 @@ def create_sinaflor_table(results_df, statistics, project_info):
     ic_per_ha_lower = media_amostral - margem_erro
     ic_per_ha_upper = media_amostral + margem_erro
     
+    # Calcular métricas adicionais para SINAFLOR
+    
+    # IC para a Média (90%) - baseado na média por árvore
+    mean_per_tree = results_df['VT (m³)'].mean()
+    std_per_tree = results_df['VT (m³)'].std(ddof=1)
+    n_trees = len(results_df)
+    error_per_tree = std_per_tree / np.sqrt(n_trees)
+    t_trees = stats.t.ppf(0.95, df=n_trees-1)
+    margin_trees = t_trees * error_per_tree
+    ic_media_lower = mean_per_tree - margin_trees
+    ic_media_upper = mean_per_tree + margin_trees
+    
+    # Volume Estimado - volume total extrapolado para a área total
+    area_total = project_info['total_area']
+    area_amostrada = project_info['total_sampled_area']
+    fator_expansao = area_total / area_amostrada if area_amostrada > 0 else 1
+    volume_estimado = total_volume * fator_expansao
+    
+    # IC para o Total (90%) - aplicar IC ao volume estimado total
+    volume_total_lower = volume_estimado - (margem_erro * area_total)
+    volume_total_upper = volume_estimado + (margem_erro * area_total)
+    
+    # EMC (Erro Máximo da Curva) - calculado como percentual do erro de amostragem
+    emc = statistics['sampling_error']
+    
     # Criar dados da tabela SINAFLOR
     sinaflor_data = {
         'Parâmetro': [
@@ -245,7 +270,11 @@ def create_sinaflor_table(results_df, statistics, project_info):
             'População',
             'Variância da média relativa',
             'Intervalo de confiança (m³)',
-            'IC para a Média por ha ( 90 %)'
+            'IC para a Média ( 90 %)',
+            'IC para a Média por ha ( 90 %)',
+            'Volume Estimado',
+            'IC para o Total ( 90 %)',
+            'EMC'
         ],
         'Valor': [
             '0,000094*DAP^1,830398*HT^0,960913',
@@ -266,7 +295,11 @@ def create_sinaflor_table(results_df, statistics, project_info):
             'Finita',
             f"{variance_relative:.5f}",
             f"{confidence_interval_lower:.6f}<X<{confidence_interval_upper:.6f}",
-            f"{ic_per_ha_lower:.6f}<X<{ic_per_ha_upper:.6f}"
+            f"{ic_media_lower:.6f}<X<{ic_media_upper:.6f}",
+            f"{ic_per_ha_lower:.6f}<X<{ic_per_ha_upper:.6f}",
+            f"{volume_estimado:.6f}",
+            f"{volume_total_lower:.6f}<X<{volume_total_upper:.6f}",
+            f"{emc:.5f}"
         ]
     }
     

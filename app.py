@@ -37,11 +37,16 @@ def calculate_species_volume_summary(results_df, project_info):
     total_sampled_area_ha = project_info['total_sampled_area']
     total_area_ha = project_info['total_area']
     
+    # Calcular área basal para cada árvore antes de agrupar
+    # AB = π × (DAP/2)² onde DAP está em cm, resultado em cm²
+    results_df['AB_individual'] = np.pi * (results_df['DAP (cm)'] / 2) ** 2
+    
     species_groups = results_df.groupby(species_column).agg({
         'DAP (cm)': ['count', 'mean'],
         'HT (m)': 'mean',
         'VT (m³)': 'sum',
-        'VT (m³/ha)': 'sum'
+        'VT (m³/ha)': 'sum',
+        'AB_individual': 'sum'  # Somar área basal de todas as árvores da espécie
     }).reset_index()
     
     # Simplificar nomes das colunas
@@ -51,7 +56,8 @@ def calculate_species_volume_summary(results_df, project_info):
         'DAP médio',
         'Altura média', 
         'Soma de VT (m³)',
-        'VT (m³)/ha'
+        'VT (m³)/ha',
+        'AB (cm²)'
     ]
     
     # Calcular n/ha usando a fórmula correta: (quantidade Encontrada / Área Total Amostrada) * 10000
@@ -62,13 +68,16 @@ def calculate_species_volume_summary(results_df, project_info):
     # Calcular n total (extrapolação para área total)
     species_groups['n total'] = species_groups['n/ha'] * total_area_ha
     
+    # Calcular área basal por hectare (AB/ha)
+    species_groups['AB/ha (cm²/ha)'] = species_groups['AB (cm²)'] / total_sampled_area_ha
+    
     # Calcular V/ha(m³)/Área total/ha usando a fórmula especificada: VT(m³/ha) × Área Total a ser Suprimida (ha)
     species_groups['V/ha(m³)/Área total/ha'] = species_groups['VT (m³)/ha'] * total_area_ha
     
-    # Reordenar colunas conforme solicitado
+    # Reordenar colunas conforme solicitado, incluindo AB
     final_columns = [
         'Espécie', 'n/ha', 'n total', 'DAP médio', 
-        'Altura média', 'Soma de VT (m³)', 'VT (m³)/ha', 
+        'Altura média', 'AB (cm²)', 'AB/ha (cm²/ha)', 'Soma de VT (m³)', 'VT (m³)/ha', 
         'V/ha(m³)/Área total/ha'
     ]
     
@@ -934,6 +943,8 @@ def processing_tab():
                 'n total': '{:.0f}',
                 'DAP médio': '{:.2f}',
                 'Altura média': '{:.2f}',
+                'AB (cm²)': '{:.2f}',
+                'AB/ha (cm²/ha)': '{:.2f}',
                 'Soma de VT (m³)': '{:.4f}',
                 'VT (m³)/ha': '{:.4f}',
                 'V/ha(m³)/Área total/ha': '{:.3f}'

@@ -175,14 +175,54 @@ def create_sinaflor_table(results_df, statistics, project_info):
     confidence_interval_lower = statistics['ci_lower']
     confidence_interval_upper = statistics['ci_upper']
     
-    # Para IC por hectare, precisa ser consistente com a média por hectare
-    # Como mean_volume_per_ha é a soma de todos VT(m³/ha), o IC deve refletir
-    # a incerteza estatística dessa estimativa total
+    # Calcular IC para a Média por ha (90%) seguindo a metodologia correta
+    # 1. Obter volumes por hectare de cada parcela
+    ua_column = None
+    for col in results_df.columns:
+        if 'UA' in str(col).upper() or 'PARCELA' in str(col).upper() or 'UNIDADE' in str(col).upper():
+            ua_column = col
+            break
     
-    # Calcular IC baseado na distribuição total por hectare
-    # O IC representa: soma_media ± margem_de_erro
-    ic_per_ha_lower = mean_volume_per_ha - statistics['margin_of_error']
-    ic_per_ha_upper = mean_volume_per_ha + statistics['margin_of_error']
+    if ua_column is not None:
+        # Calcular volume por hectare para cada parcela (somatória dos volumes das árvores da parcela)
+        volumes_por_parcela = results_df.groupby(ua_column)['VT (m³/ha)'].sum()
+    else:
+        # Fallback: distribuir uniformemente
+        num_plots = project_info['num_plots']
+        total_trees = len(results_df)
+        trees_per_plot = total_trees // num_plots
+        
+        volumes_por_parcela = []
+        for i in range(num_plots):
+            start_idx = i * trees_per_plot
+            end_idx = start_idx + trees_per_plot
+            if i == num_plots - 1:
+                end_idx = total_trees
+            volume_parcela = results_df.iloc[start_idx:end_idx]['VT (m³/ha)'].sum()
+            volumes_por_parcela.append(volume_parcela)
+        
+        volumes_por_parcela = pd.Series(volumes_por_parcela)
+    
+    # 2. Calcular média amostral (soma dos volumes das parcelas / número de parcelas)
+    n_parcelas = len(volumes_por_parcela)
+    media_amostral = volumes_por_parcela.sum() / n_parcelas
+    
+    # 3. Calcular desvio padrão amostral
+    desvio_padrao_amostral = volumes_por_parcela.std(ddof=1)  # ddof=1 para amostra
+    
+    # 4. Calcular erro padrão da média
+    erro_padrao_media = desvio_padrao_amostral / np.sqrt(n_parcelas)
+    
+    # 5. Valor t para 90% de confiança com (n-1) graus de liberdade
+    from scipy import stats
+    t_90 = stats.t.ppf(0.95, df=n_parcelas-1)  # 95% = (1 + 0.90)/2 para bilateral
+    
+    # 6. Margem de erro
+    margem_erro = t_90 * erro_padrao_media
+    
+    # 7. Limites do intervalo de confiança
+    ic_per_ha_lower = media_amostral - margem_erro
+    ic_per_ha_upper = media_amostral + margem_erro
     
     # Criar dados da tabela SINAFLOR
     sinaflor_data = {

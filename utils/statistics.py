@@ -30,7 +30,7 @@ class StatisticsAnalyzer:
                 break
         
         if ua_column is not None:
-            # Calcular volume por hectare médio para cada parcela
+            # Calcular volume por hectare total para cada parcela (soma dos volumes das árvores da parcela)
             plot_volumes = results_df.groupby(ua_column)['VT (m³/ha)'].sum()
             volume_data = plot_volumes
         else:

@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import io
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
 from utils.calculations import ForestryCalculator
 from utils.statistics import StatisticsAnalyzer
 from utils.report_generator import ReportGenerator
@@ -317,6 +321,87 @@ def create_sinaflor_table(results_df, statistics, project_info):
     
     sinaflor_table = pd.DataFrame(sinaflor_data)
     return sinaflor_table
+
+def create_plot_volumes_chart(results_df, project_info):
+    """
+    Cria gráfico da média de volume por parcela.
+    
+    Args:
+        results_df (pandas.DataFrame): Dados processados
+        project_info (dict): Informações do projeto
+        
+    Returns:
+        plotly.graph_objects.Figure: Gráfico interativo
+    """
+    # Identificar coluna UA/Parcela
+    ua_column = None
+    for col in results_df.columns:
+        if 'UA' in str(col).upper() or 'PARCELA' in str(col).upper() or 'UNIDADE' in str(col).upper():
+            ua_column = col
+            break
+    
+    if ua_column is not None:
+        # Calcular volume total por parcela
+        plot_volumes = results_df.groupby(ua_column)['VT (m³/ha)'].sum().reset_index()
+        plot_volumes.columns = ['Parcela', 'Volume (m³/ha)']
+        plot_volumes = plot_volumes.sort_values('Parcela')
+    else:
+        # Fallback: distribuir uniformemente
+        num_plots = project_info['num_plots']
+        total_trees = len(results_df)
+        trees_per_plot = total_trees // num_plots
+        
+        plot_data = []
+        for i in range(num_plots):
+            start_idx = i * trees_per_plot
+            end_idx = start_idx + trees_per_plot
+            if i == num_plots - 1:
+                end_idx = total_trees
+            volume = results_df.iloc[start_idx:end_idx]['VT (m³/ha)'].sum()
+            plot_data.append({'Parcela': f'Parcela {i+1}', 'Volume (m³/ha)': volume})
+        
+        plot_volumes = pd.DataFrame(plot_data)
+    
+    # Calcular estatísticas
+    media_volume = plot_volumes['Volume (m³/ha)'].mean()
+    
+    # Criar gráfico de barras interativo
+    fig = px.bar(
+        plot_volumes,
+        x='Parcela',
+        y='Volume (m³/ha)',
+        title='Volume por Hectare por Parcela',
+        labels={
+            'Parcela': 'Parcela',
+            'Volume (m³/ha)': 'Volume (m³/ha)'
+        }
+    )
+    
+    # Adicionar linha da média
+    fig.add_hline(
+        y=media_volume,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"Média: {media_volume:.2f} m³/ha",
+        annotation_position="top right"
+    )
+    
+    # Personalizar layout
+    fig.update_layout(
+        xaxis_title="Parcelas",
+        yaxis_title="Volume (m³/ha)",
+        showlegend=False,
+        height=500,
+        font=dict(size=12)
+    )
+    
+    # Adicionar valores nas barras
+    fig.update_traces(
+        texttemplate='%{y:.1f}',
+        textposition='outside'
+    )
+    
+    return fig, plot_volumes
 
 def calculate_plot_averages_table(results_df, project_info):
     """
@@ -907,9 +992,41 @@ def statistics_tab():
         volume_upper = statistics['ci_upper'] * project_info['total_area']
         st.metric("Volume Máximo IC 90% (m³)", f"{volume_upper:.2f}")
     
+    # Gráfico de Volume por Parcela
+    st.subheader("📊 Gráfico: Volume por Hectare por Parcela")
+    results_df = st.session_state.results_df
+    
+    try:
+        fig, plot_data = create_plot_volumes_chart(results_df, project_info)
+        
+        # Exibir gráfico
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Exibir estatísticas do gráfico
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Média das Parcelas", f"{plot_data['Volume (m³/ha)'].mean():.2f} m³/ha")
+        with col2:
+            st.metric("Parcela com Maior Volume", f"{plot_data['Volume (m³/ha)'].max():.2f} m³/ha")
+        with col3:
+            st.metric("Parcela com Menor Volume", f"{plot_data['Volume (m³/ha)'].min():.2f} m³/ha")
+        
+        # Tabela dos dados do gráfico
+        st.subheader("Dados das Parcelas")
+        st.dataframe(
+            plot_data.style.format({
+                'Volume (m³/ha)': '{:.2f}'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+        
+    except Exception as e:
+        st.error(f"Erro ao criar gráfico: {str(e)}")
+        st.info("Verifique se os dados possuem a coluna UA/Parcela corretamente identificada.")
+    
     # Tabela formato SINAFLOR
     st.subheader("Resultados Formato SINAFLOR")
-    results_df = st.session_state.results_df
     sinaflor_table = create_sinaflor_table(results_df, statistics, project_info)
     
     # Exibir tabela com formatação especial
